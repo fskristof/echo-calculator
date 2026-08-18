@@ -205,6 +205,10 @@
     flex-shrink: 0;
   }
   .card-header[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+  /* In .head-row layouts the chevron sits outside the button (after the
+     info button) so it can be the rightmost element — same rotation,
+     driven by a sibling selector instead of a descendant one. */
+  .card-header[aria-expanded="true"] ~ .chevron { transform: rotate(180deg); }
 
   .card-body {
     margin-top: 16px;
@@ -690,9 +694,9 @@
           <div class="head-row">
             <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
               <span class="title" style="font-size:16px;" data-t="aorticValveGroup">Aortic Valve</span>
-              <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <button class="info-btn" type="button" data-info="as" aria-label="Aortic stenosis severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
+            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
           <div class="field-stack sub-body" hidden style="margin-top:12px;">
             <div class="field">
@@ -718,9 +722,9 @@
           <div class="head-row">
             <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
               <span class="title" style="font-size:16px;" data-t="arPisaGroup">AR PISA</span>
-              <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <button class="info-btn" type="button" data-info="ar" aria-label="Aortic regurgitation severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
+            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
           <div class="field-stack sub-body" hidden style="margin-top:12px;">
             <div class="field">
@@ -1263,8 +1267,18 @@
     btn.addEventListener("click", () => {
       const expanded = btn.getAttribute("aria-expanded") === "true";
       btn.setAttribute("aria-expanded", String(!expanded));
-      const body = btn.nextElementSibling;
+      // In a .head-row layout the button's sibling is the info button, not
+      // the collapsible body — the body follows the whole .head-row instead.
+      const body = (btn.closest(".head-row") || btn).nextElementSibling;
       body.hidden = expanded;
+    });
+  });
+  // Standalone chevrons (moved outside the button in .head-row layouts so
+  // the info button can sit between the title and the chevron) still need
+  // to trigger the same collapse toggle when clicked directly.
+  $$(".head-row > svg.chevron").forEach(chevron => {
+    chevron.addEventListener("click", () => {
+      chevron.closest(".head-row").querySelector(".card-header").click();
     });
   });
 
