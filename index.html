@@ -490,6 +490,11 @@
     box-shadow: 1px 0 0 var(--divider);
   }
   table.info-table.wide thead th:first-child { z-index: 2; }
+  table.info-table.wide th,
+  table.info-table.wide td {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
   table.info-table th,
   table.info-table td {
     padding: 10px 10px;
@@ -973,7 +978,7 @@
       wide: true,
       // Parameter + Mild/Moderate/Severe fit on screen without scrolling;
       // Massive/Torrential sit past that width and are reached by scrolling.
-      colWidths: ["112px", "76px", "84px", "72px", "72px", "72px"],
+      colWidths: ["104px", "80px", "88px", "80px", "84px", "84px"],
       headers: ["Parameter", "Mild", "Moderate", "Severe", "Massive", "Torrential"],
       rows: [
         ["Vena contracta avg (mm)", "<3", "3–6.9", "7–13.9", "14–20", ">20"],
