@@ -980,8 +980,8 @@
         ["PISA radius (mm)", "<5", "6–9", ">9", "", ""],
         ["EROA (cm²)", "<0.2", "0.2–0.39", "0.4–0.59", "0.6–0.79", "≥0.8"],
         ["Reg. vol. (ml)", "<30", "30–44", "45–59", "60–74", "≥75"],
-        ["Hepatic vein flow", "S dominant (normal)", "S “blunting”", "Systolic reverse", "Systolic reverse", "Systolic reverse"],
-        ["Color jet", "Small, central", "Moderate", "Large, central/eccentric", "Large, central/eccentric", "Large, central/eccentric"],
+        ["Hepatic vein flow", "S dominant (normal)", "S “blunting”", { text: "Systolic reverse flow", span: 3 }],
+        ["Color jet", "Small, central", "Moderate", { text: "Large, central/eccentric", span: 3 }],
         ["CW density", "Faint, incomplete", "Dense", "Dense", "Dense", "Dense"],
         ["CW shape", "Parabolic", "Parabolic", "Triangular", "", ""],
         ["3D VCA (cm²)", "<0.43", "0.43–0.67", "0.67–0.94", "0.95–1.14", ">1.14"],
@@ -1027,7 +1027,11 @@
     }).join("");
     const bodyRows = info.rows.map(r => {
       const [label, ...cells] = r;
-      return `<tr><th scope="row">${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
+      const tds = cells.map(c => {
+        if (c && typeof c === "object") return `<td colspan="${c.span}">${c.text}</td>`;
+        return `<td>${c}</td>`;
+      }).join("");
+      return `<tr><th scope="row">${label}</th>${tds}</tr>`;
     }).join("");
     const colgroup = info.colWidths
       ? `<colgroup>${info.colWidths.map(w => `<col style="width:${w}">`).join("")}</colgroup>`
