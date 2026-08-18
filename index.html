@@ -33,6 +33,14 @@
     --danger-text: #FFFFFF;
     --shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
     --divider: #E5E7EB;
+    --grade-mild-bg: #DCFCE7;
+    --grade-mild-text: #166534;
+    --grade-moderate-bg: #FEF3C7;
+    --grade-moderate-text: #92400E;
+    --grade-severe-bg: #FEE2E2;
+    --grade-severe-text: #991B1B;
+    --grade-extreme-bg: #7F1D1D;
+    --grade-extreme-text: #FFFFFF;
   }
 
   /* Light is the default and always what a fresh visit sees — dark only applies
@@ -56,6 +64,14 @@
     --danger-text: #1A0E0E;
     --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     --divider: #26304A;
+    --grade-mild-bg: #14351F;
+    --grade-mild-text: #86EFAC;
+    --grade-moderate-bg: #3B2A08;
+    --grade-moderate-text: #FCD34D;
+    --grade-severe-bg: #3F1414;
+    --grade-severe-text: #FCA5A5;
+    --grade-extreme-bg: #7F1D1D;
+    --grade-extreme-text: #FFE4E6;
   }
 
   * { box-sizing: border-box; }
@@ -315,6 +331,187 @@
     padding: 4px 20px 24px;
     line-height: 1.5;
   }
+
+  /* Info ("i") buttons sit beside a heading. Where the heading is itself a
+     collapse button, both live in .head-row so the two never nest. */
+  .head-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .head-row > .card-header { flex: 1; min-width: 0; }
+
+  .info-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--input-border-active);
+    background: none;
+    color: var(--input-border-active);
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .info-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .subgroup-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 4px 12px;
+  }
+  .subgroup-title-row .subgroup-title { margin: 0; }
+
+  /* Grade badges on results */
+  .grade {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .grade-mild { background: var(--grade-mild-bg); color: var(--grade-mild-text); }
+  .grade-moderate { background: var(--grade-moderate-bg); color: var(--grade-moderate-text); }
+  .grade-severe { background: var(--grade-severe-bg); color: var(--grade-severe-text); }
+  .grade-massive, .grade-torrential { background: var(--grade-extreme-bg); color: var(--grade-extreme-text); }
+  .result-row .value-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Full-screen info overlay */
+  .info-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .info-overlay[hidden] { display: none; }
+
+  .info-panel {
+    width: 100%;
+    max-width: 430px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .info-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--divider);
+    flex-shrink: 0;
+  }
+  .info-bar h2 {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+  }
+  .info-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: var(--subtle-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    color: var(--text-main);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .info-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .info-close svg { width: 20px; height: 20px; }
+
+  .info-content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 12px 32px;
+  }
+
+  .info-table-wrap {
+    overflow-x: auto;
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  table.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.info-table th,
+  table.info-table td {
+    padding: 10px 10px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--divider);
+  }
+  table.info-table thead th {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-sub);
+    white-space: nowrap;
+  }
+  table.info-table tbody th {
+    font-weight: 600;
+    color: var(--text-main);
+  }
+  table.info-table tbody td { color: var(--text-sub); font-variant-numeric: tabular-nums; }
+  table.info-table tr:last-child th,
+  table.info-table tr:last-child td { border-bottom: none; }
+  table.info-table th.col-mild { color: var(--grade-mild-text); }
+  table.info-table th.col-moderate { color: var(--grade-moderate-text); }
+  table.info-table th.col-severe { color: var(--grade-severe-text); }
+
+  .info-notes {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+  .info-notes h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 10px;
+  }
+  .info-notes ul { margin: 0; padding-left: 18px; }
+  .info-notes li {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-sub);
+    margin-bottom: 8px;
+  }
+  .info-notes li:last-child { margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -379,7 +576,10 @@
       </button>
       <div class="card-body" hidden>
         <div class="subgroup">
-          <p class="subgroup-title" data-t="mrPisaGroup">MR PISA</p>
+          <div class="subgroup-title-row">
+            <p class="subgroup-title" data-t="mrPisaGroup">MR PISA</p>
+            <button class="info-btn" type="button" data-info="mr" aria-label="Mitral regurgitation severity reference">i</button>
+          </div>
           <div class="field-stack">
             <div class="field">
               <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
@@ -405,7 +605,10 @@
         </div>
 
         <div class="subgroup">
-          <p class="subgroup-title" data-t="mvVtiPw">MV VTI (PW)</p>
+          <div class="subgroup-title-row">
+            <p class="subgroup-title" data-t="mvVtiPw">MV VTI (PW)</p>
+            <button class="info-btn" type="button" data-info="mr" aria-label="Mitral regurgitation severity reference">i</button>
+          </div>
           <div class="field-stack">
             <div class="field">
               <label data-t-unit="|cm">(cm)</label>
@@ -452,10 +655,13 @@
 
         <!-- Aortic valve subgroup -->
         <div class="subgroup" data-subcard="av">
-          <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
-            <span class="title" style="font-size:16px;" data-t="aorticValveGroup">Aortic Valve</span>
-            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </button>
+          <div class="head-row">
+            <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
+              <span class="title" style="font-size:16px;" data-t="aorticValveGroup">Aortic Valve</span>
+              <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <button class="info-btn" type="button" data-info="as" aria-label="Aortic stenosis severity reference">i</button>
+          </div>
           <div class="field-stack sub-body" hidden style="margin-top:12px;">
             <div class="field">
               <label data-t-unit="aorticVmax|m/s">Vmax (optional) (m/s)</label>
@@ -477,10 +683,13 @@
 
         <!-- AR PISA subgroup -->
         <div class="subgroup" data-subcard="arpisa">
-          <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
-            <span class="title" style="font-size:16px;" data-t="arPisaGroup">AR PISA</span>
-            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </button>
+          <div class="head-row">
+            <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
+              <span class="title" style="font-size:16px;" data-t="arPisaGroup">AR PISA</span>
+              <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <button class="info-btn" type="button" data-info="ar" aria-label="Aortic regurgitation severity reference">i</button>
+          </div>
           <div class="field-stack sub-body" hidden style="margin-top:12px;">
             <div class="field">
               <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
@@ -515,7 +724,10 @@
       </button>
       <div class="card-body" hidden>
         <div class="subgroup">
-          <p class="subgroup-title" data-t="trPisaGroup">TR PISA</p>
+          <div class="subgroup-title-row">
+            <p class="subgroup-title" data-t="trPisaGroup">TR PISA</p>
+            <button class="info-btn" type="button" data-info="tr" aria-label="Tricuspid regurgitation severity reference">i</button>
+          </div>
           <div class="field-stack">
             <div class="field">
               <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
@@ -552,6 +764,18 @@
   </main>
 
   <footer class="note">Reproduction built from the app's own source (calculatorUtils.js). Not for diagnostic use.</footer>
+</div>
+
+<div class="info-overlay" id="infoOverlay" hidden>
+  <div class="info-panel">
+    <div class="info-bar">
+      <h2 id="infoTitle"></h2>
+      <button class="info-close" type="button" id="infoClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="info-content" id="infoContent"></div>
+  </div>
 </div>
 
 <script>
@@ -657,6 +881,148 @@
     return null;
   };
 
+  // ---- severity grading ----
+  // English-only for now; grading bands transcribed from Echo checklist.xlsx.
+  // Ambiguous range boundaries are resolved toward the higher-severity side.
+  const gradeLabels = { mild: "Mild", moderate: "Moderate", severe: "Severe", massive: "Massive", torrential: "Torrential" };
+  const gradeFns = {
+    mrEro: v => v < 0.2 ? "mild" : v <= 0.4 ? "moderate" : "severe",
+    mrRegVol: v => v < 30 ? "mild" : v < 60 ? "moderate" : "severe",
+    mrRegFraction: v => v < 30 ? "mild" : v < 50 ? "moderate" : "severe",
+    arEro: v => v < 0.1 ? "mild" : v < 0.3 ? "moderate" : "severe",
+    arRegVol: v => v < 30 ? "mild" : v < 60 ? "moderate" : "severe",
+    arRegFraction: v => v < 30 ? "mild" : v < 50 ? "moderate" : "severe",
+    trEro: v => v < 0.2 ? "mild" : v < 0.4 ? "moderate" : v < 0.6 ? "severe" : v < 0.8 ? "massive" : "torrential",
+    trRegVol: v => v < 30 ? "mild" : v < 45 ? "moderate" : v < 60 ? "severe" : v < 75 ? "massive" : "torrential",
+    ava: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
+    avai: v => v > 0.85 ? "mild" : v > 0.6 ? "moderate" : "severe",
+    dviVti: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
+    dviVmax: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
+    // Only a single cutoff is defined for this metric (per user direction):
+    // below 1 reads as mild, at/above 1 reads as severe, moderate is unused.
+    mvVtiLvotVti: v => v < 1 ? "mild" : "severe",
+  };
+
+  // ---- severity reference content (English only; Hungarian pass comes later) ----
+  const severityInfo = {
+    mr: {
+      title: "Mitral Regurgitation",
+      headers: ["Parameter", "Mild", "Moderate", "Severe"],
+      rows: [
+        ["Vena contracta (mm)", "<3.0", "3.0–6.9", "≥7.0"],
+        ["PISA radius (mm)", "<4", "4–10", ">10"],
+        ["EROA (cm²)", "<0.2", "0.2–0.4", ">0.4"],
+        ["Reg. vol. (ml)", "<30", "30–59", "≥60"],
+        ["Reg. fraction (%)", "<30", "30–49", "≥50"],
+        ["3D VCA (cm²)", "—", "—", "≥0.5"],
+        ["MV VTI / LVOT VTI", "—", "—", ">1.4 suggests dysfunction"],
+      ],
+      notes: [
+        "Reg. volume cutoff is lower (~40 ml may already be severe) when LV EF is reduced.",
+        "If PISA isn't available, “Simpson (3D) SV − LVOT forward SV” can estimate reg. volume, but is often inaccurate — avoid when possible.",
+        "MV VTI / LVOT VTI is measured at the annulus, mitral inflow with PW.",
+      ],
+    },
+    ar: {
+      title: "Aortic Regurgitation",
+      headers: ["Parameter", "Mild", "Moderate", "Severe"],
+      rows: [
+        ["Vena contracta (mm)", "<3", "3–6", ">6"],
+        ["EROA (cm²)", "<0.1", "0.1–0.29", "≥0.3"],
+        ["Reg. vol. (ml)", "<30", "30–59", "≥60"],
+        ["Reg. fraction (%)", "<30", "30–49", "≥50"],
+        ["Jet / LVOT diameter", "<0.25", "0.25–0.64", ">0.64"],
+        ["PHT (ms)", ">500", "500–200", "<200"],
+        ["Descending aorta flow", "—", "—", "Holodiastolic reverse flow"],
+      ],
+      notes: [
+        "Jet/LVOT diameter is measured at PLAX, at the LVOT/annulus junction — use caution with eccentric jets.",
+        "PHT is less sensitive to severity in chronic AR.",
+        "If reverse diastolic flow is present: at least moderate, and definitely severe if end-diastolic velocity ≥ 20 cm/s or VTI ≥ 15 cm.",
+        "In chronic severe AR, serial ESV / end-systolic diameter and strain are important to follow.",
+      ],
+    },
+    tr: {
+      title: "Tricuspid Regurgitation",
+      headers: ["Parameter", "Mild", "Moderate", "Severe"],
+      rows: [
+        ["Vena contracta avg (mm)", "<3", "3–6.9", "≥7"],
+        ["PISA radius (mm)", "<5", "6–9", ">9"],
+        ["EROA (cm²)", "<0.2", "0.2–0.39", "0.4–0.59"],
+        ["Reg. vol. (ml)", "<30", "30–44", "45–59"],
+        ["Hepatic vein flow", "S dominant (normal)", "S “blunting”", "Systolic reverse"],
+        ["Color jet", "Small, central", "Moderate", "Large, central/eccentric"],
+        ["CW density", "Faint, incomplete", "Dense", "Dense"],
+        ["CW shape", "Parabolic", "Parabolic", "Triangular"],
+        ["3D VCA (mm²)", "—", "—", "75–94"],
+        ["Jet area (cm²)", "<5", "5–10", ">10"],
+      ],
+      notes: [
+        "EROA above severe: 0.6–0.79 cm² is massive, ≥0.8 cm² is torrential.",
+        "Reg. vol. above severe: 60–74 ml is massive, ≥75 ml is torrential.",
+        "Vena contracta above severe: 14–20 mm is massive, >20 mm is torrential — average across several views.",
+        "3D VCA above severe: 95–114 mm² is massive, >115 mm² is torrential (updated cutoffs, 2026-03-13).",
+        "CW shape/density are not always reliable; if Vmax < 2 m/s, likely massive.",
+      ],
+    },
+    as: {
+      title: "Aortic Stenosis",
+      headers: ["Parameter", "Mild", "Moderate", "Severe"],
+      rows: [
+        ["Vmax (m/s)", "2.6–2.9", "3–3.9", "≥4"],
+        ["Mean gradient (mmHg)", "<20", "20–40", ">40"],
+        ["AVA (cm²)", "≥1.5", "1.5–1.0", "≤1.0"],
+        ["AVAi (cm²/m²)", ">0.85", "0.85–0.6", "≤0.6"],
+        ["DVI", ">0.5", "0.5–0.25", "<0.25"],
+        ["Acceleration time (ms)", "—", "—", ">100"],
+        ["AT/ET", "—", "—", ">0.35"],
+        ["CW contour", "Triangle", "—", "Parabola"],
+      ],
+      notes: [
+        "If Vmax ≤ 2.5 m/s, consider a sclerotic (non-stenotic) aortic valve instead.",
+        "Blood pressure outside the normal range affects gradients (lower gradient at higher BP) — always document BP alongside measurements.",
+        "Combined lesions can raise the gradient and overestimate severity — affects AVA and DVI too.",
+        "Rule of thumb for small discrepancies: 1 cm² of AVA ≈ 0–35 mmHg of mean gradient. AVA is more sensitive, gradient is more specific.",
+        "Always check GLS (and LA strain) — roughly 10% of severe AS is amyloidosis.",
+        "AVAi is only useful at body-size extremes (e.g. very tall/short); it underestimates in obese patients — avoid using it there.",
+      ],
+    },
+  };
+
+  function renderInfo(topicKey) {
+    const info = severityInfo[topicKey];
+    if (!info) return;
+    $("#infoTitle").textContent = info.title;
+    const theadCells = info.headers.map((h, i) => {
+      const cls = i === 1 ? "col-mild" : i === 2 ? "col-moderate" : i === 3 ? "col-severe" : "";
+      return `<th${cls ? ` class="${cls}"` : ""}>${h}</th>`;
+    }).join("");
+    const bodyRows = info.rows.map(r => {
+      const [label, ...cells] = r;
+      return `<tr><th scope="row">${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
+    }).join("");
+    const notesHtml = info.notes && info.notes.length
+      ? `<div class="info-notes"><h3>Notes</h3><ul>${info.notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
+      : "";
+    $("#infoContent").innerHTML = `
+      <div class="info-table-wrap">
+        <table class="info-table">
+          <thead><tr>${theadCells}</tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+      ${notesHtml}
+    `;
+  }
+
+  function openInfo(topicKey) {
+    renderInfo(topicKey);
+    $("#infoOverlay").hidden = false;
+  }
+  function closeInfo() {
+    $("#infoOverlay").hidden = true;
+  }
+
   // ---- state ----
   const state = { language: "hu", bsaManualMode: false };
   const fieldNames = [
@@ -751,6 +1117,14 @@
     try { localStorage.setItem("echo-theme", theme); } catch (e) { /* ignore */ }
   });
 
+  $$(".info-btn").forEach(btn => {
+    btn.addEventListener("click", () => openInfo(btn.dataset.info));
+  });
+  $("#infoClose").addEventListener("click", closeInfo);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("#infoOverlay").hidden) closeInfo();
+  });
+
   $("#clearBtn").addEventListener("click", () => {
     fieldNames.forEach(f => state[f] = "");
     state.bsaManualValue = "";
@@ -819,8 +1193,12 @@
       any = true;
       const row = document.createElement("div");
       row.className = "result-row";
-      const formatted = fmt(typeof val === "number" ? val : parseFloat(val));
-      row.innerHTML = `<span class="label">${t[key]}</span><span class="value">${formatted}${unit ? " " + unit : ""}</span>`;
+      const numeric = typeof val === "number" ? val : parseFloat(val);
+      const formatted = fmt(numeric);
+      const gradeFn = gradeFns[key];
+      const grade = gradeFn ? gradeFn(numeric) : null;
+      const badge = grade ? `<span class="grade grade-${grade}">${gradeLabels[grade]}</span>` : "";
+      row.innerHTML = `<span class="label">${t[key]}</span><span class="value-wrap"><span class="value">${formatted}${unit ? " " + unit : ""}</span>${badge}</span>`;
       list.appendChild(row);
     });
     $("#resultsCard").hidden = !any;
