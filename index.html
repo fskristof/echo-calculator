@@ -288,9 +288,10 @@
     margin: 0 0 16px;
   }
   .result-row {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
+    column-gap: 10px;
     padding: 12px 16px;
     background: var(--result-bg);
     border-radius: 8px;
@@ -299,6 +300,7 @@
     font-size: 14px;
     font-weight: 500;
     color: var(--result-text);
+    min-width: 0;
   }
   .result-row .value {
     font-size: 17px;
@@ -306,6 +308,7 @@
     color: var(--result-text);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    text-align: right;
   }
 
   .clear-btn {
@@ -343,20 +346,21 @@
 
   .info-btn {
     flex-shrink: 0;
+    margin-left: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     padding: 0;
     border-radius: 50%;
-    border: 1.5px solid var(--input-border-active);
+    border: 1.25px solid var(--input-border-active);
     background: none;
     color: var(--input-border-active);
     font-family: Georgia, "Times New Roman", serif;
     font-style: italic;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 11px;
     line-height: 1;
     cursor: pointer;
     touch-action: manipulation;
@@ -371,6 +375,7 @@
     margin: 4px 4px 12px;
   }
   .subgroup-title-row .subgroup-title { margin: 0; }
+  .head-row .info-btn { margin-left: 0; }
 
   /* Grade badges on results */
   .grade {
@@ -386,12 +391,6 @@
   .grade-moderate { background: var(--grade-moderate-bg); color: var(--grade-moderate-text); }
   .grade-severe { background: var(--grade-severe-bg); color: var(--grade-severe-text); }
   .grade-massive, .grade-torrential { background: var(--grade-extreme-bg); color: var(--grade-extreme-text); }
-  .result-row .value-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
 
   /* Full-screen info overlay */
   .info-overlay {
@@ -1197,8 +1196,8 @@
       const formatted = fmt(numeric);
       const gradeFn = gradeFns[key];
       const grade = gradeFn ? gradeFn(numeric) : null;
-      const badge = grade ? `<span class="grade grade-${grade}">${gradeLabels[grade]}</span>` : "";
-      row.innerHTML = `<span class="label">${t[key]}</span><span class="value-wrap"><span class="value">${formatted}${unit ? " " + unit : ""}</span>${badge}</span>`;
+      const badge = grade ? `<span class="grade grade-${grade}">${gradeLabels[grade]}</span>` : "<span></span>";
+      row.innerHTML = `<span class="label">${t[key]}</span>${badge}<span class="value">${formatted}${unit ? " " + unit : ""}</span>`;
       list.appendChild(row);
     });
     $("#resultsCard").hidden = !any;
