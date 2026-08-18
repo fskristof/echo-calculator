@@ -463,20 +463,31 @@
     font-size: 13px;
   }
   /* Tables with more columns than a phone screen can fit (e.g. TR's
-     massive/torrential columns) stay at full natural width and scroll
-     horizontally inside .info-table-wrap, rather than squeezing columns. */
+     Massive/Torrential columns) use fixed column widths from a <colgroup>
+     so Parameter + Mild/Moderate/Severe fit without scrolling, and only
+     the trailing columns require a horizontal scroll to reach. The
+     Parameter column stays pinned in place (sticky) while that happens. */
   table.info-table.wide {
-    width: max-content;
-    min-width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
   }
-  table.info-table.wide th,
-  table.info-table.wide td {
+  table.info-table.wide thead th {
     white-space: nowrap;
   }
-  table.info-table.wide tbody th {
+  table.info-table.wide tbody th,
+  table.info-table.wide tbody td {
     white-space: normal;
-    min-width: 140px;
   }
+  table.info-table.wide th:first-child,
+  table.info-table.wide td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--card);
+    box-shadow: 1px 0 0 var(--divider);
+  }
+  table.info-table.wide thead th:first-child { z-index: 2; }
   table.info-table th,
   table.info-table td {
     padding: 10px 10px;
@@ -958,6 +969,9 @@
     tr: {
       title: "Tricuspid Regurgitation",
       wide: true,
+      // Parameter + Mild/Moderate/Severe fit on screen without scrolling;
+      // Massive/Torrential sit past that width and are reached by scrolling.
+      colWidths: ["116px", "68px", "68px", "68px", "68px", "68px"],
       headers: ["Parameter", "Mild", "Moderate", "Severe", "Massive", "Torrential"],
       rows: [
         ["Vena contracta avg (mm)", "<3", "3–6.9", "7–13.9", "14–20", ">20"],
@@ -1014,12 +1028,22 @@
       const [label, ...cells] = r;
       return `<tr><th scope="row">${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
     }).join("");
+    const colgroup = info.colWidths
+      ? `<colgroup>${info.colWidths.map(w => `<col style="width:${w}">`).join("")}</colgroup>`
+      : "";
+    // A fixed-layout table with width:auto still expands columns to fit
+    // unbreakable content in some browsers, ignoring the colgroup — so the
+    // table width has to be pinned explicitly to the sum of the columns.
+    const tableWidthPx = info.colWidths
+      ? info.colWidths.reduce((sum, w) => sum + parseFloat(w), 0)
+      : null;
     const notesHtml = info.notes && info.notes.length
       ? `<div class="info-notes"><h3>Notes</h3><ul>${info.notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
       : "";
     $("#infoContent").innerHTML = `
       <div class="info-table-wrap">
-        <table class="info-table${info.wide ? " wide" : ""}">
+        <table class="info-table${info.wide ? " wide" : ""}"${tableWidthPx ? ` style="width:${tableWidthPx}px"` : ""}>
+          ${colgroup}
           <thead><tr>${theadCells}</tr></thead>
           <tbody>${bodyRows}</tbody>
         </table>
