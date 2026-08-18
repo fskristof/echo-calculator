@@ -478,6 +478,8 @@
   table.info-table.wide tbody th,
   table.info-table.wide tbody td {
     white-space: normal;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
   table.info-table.wide th:first-child,
   table.info-table.wide td:first-child {
@@ -971,22 +973,21 @@
       wide: true,
       // Parameter + Mild/Moderate/Severe fit on screen without scrolling;
       // Massive/Torrential sit past that width and are reached by scrolling.
-      colWidths: ["112px", "64px", "80px", "64px", "68px", "68px"],
+      colWidths: ["112px", "76px", "84px", "72px", "72px", "72px"],
       headers: ["Parameter", "Mild", "Moderate", "Severe", "Massive", "Torrential"],
       rows: [
         ["Vena contracta avg (mm)", "<3", "3–6.9", "7–13.9", "14–20", ">20"],
-        ["PISA radius (mm)", "<5", "6–9", ">9", "—", "—"],
+        ["PISA radius (mm)", "<5", "6–9", ">9", "", ""],
         ["EROA (cm²)", "<0.2", "0.2–0.39", "0.4–0.59", "0.6–0.79", "≥0.8"],
         ["Reg. vol. (ml)", "<30", "30–44", "45–59", "60–74", "≥75"],
-        ["Hepatic vein flow", "S dominant (normal)", "S “blunting”", "Systolic reverse", "—", "—"],
-        ["Color jet", "Small, central", "Moderate", "Large, central/eccentric", "—", "—"],
-        ["CW density", "Faint, incomplete", "Dense", "Dense", "—", "—"],
-        ["CW shape", "Parabolic", "Parabolic", "Triangular", "—", "—"],
-        ["3D VCA (mm²)", "—", "—", "75–94", "95–114", ">115"],
-        ["Jet area (cm²)", "<5", "5–10", ">10", "—", "—"],
+        ["Hepatic vein flow", "S dominant (normal)", "S “blunting”", "Systolic reverse", "Systolic reverse", "Systolic reverse"],
+        ["Color jet", "Small, central", "Moderate", "Large, central/eccentric", "Large, central/eccentric", "Large, central/eccentric"],
+        ["CW density", "Faint, incomplete", "Dense", "Dense", "Dense", "Dense"],
+        ["CW shape", "Parabolic", "Parabolic", "Triangular", "", ""],
+        ["3D VCA (cm²)", "<0.43", "0.43–0.67", "0.67–0.94", "0.95–1.14", ">1.14"],
+        ["Jet area (cm²)", "<5", "5–10", ">10", "", ""],
       ],
       notes: [
-        "3D VCA massive/torrential cutoffs were updated 2026-03-13.",
         "Vena contracta should be averaged across several views.",
         "CW shape/density are not always reliable; if Vmax < 2 m/s, likely massive.",
       ],
