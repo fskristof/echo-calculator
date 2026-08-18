@@ -462,6 +462,21 @@
     border-collapse: collapse;
     font-size: 13px;
   }
+  /* Tables with more columns than a phone screen can fit (e.g. TR's
+     massive/torrential columns) stay at full natural width and scroll
+     horizontally inside .info-table-wrap, rather than squeezing columns. */
+  table.info-table.wide {
+    width: max-content;
+    min-width: 100%;
+  }
+  table.info-table.wide th,
+  table.info-table.wide td {
+    white-space: nowrap;
+  }
+  table.info-table.wide tbody th {
+    white-space: normal;
+    min-width: 140px;
+  }
   table.info-table th,
   table.info-table td {
     padding: 10px 10px;
@@ -487,6 +502,10 @@
   table.info-table th.col-mild { color: var(--grade-mild-text); }
   table.info-table th.col-moderate { color: var(--grade-moderate-text); }
   table.info-table th.col-severe { color: var(--grade-severe-text); }
+  table.info-table th.col-massive,
+  table.info-table th.col-torrential { color: var(--grade-extreme-bg); }
+  html[data-theme="dark"] table.info-table th.col-massive,
+  html[data-theme="dark"] table.info-table th.col-torrential { color: var(--grade-extreme-text); }
 
   .info-notes {
     background: var(--card);
@@ -910,12 +929,11 @@
         ["Reg. vol. (ml)", "<30", "30–59", "≥60"],
         ["Reg. fraction (%)", "<30", "30–49", "≥50"],
         ["3D VCA (cm²)", "—", "—", "≥0.5"],
-        ["MV VTI / LVOT VTI", "—", "—", ">1.4 suggests dysfunction"],
+        ["MV VTI / LVOT VTI", "<1", "—", ">1.4"],
       ],
       notes: [
         "Reg. volume cutoff is lower (~40 ml may already be severe) when LV EF is reduced.",
         "If PISA isn't available, “Simpson (3D) SV − LVOT forward SV” can estimate reg. volume, but is often inaccurate — avoid when possible.",
-        "MV VTI / LVOT VTI is measured at the annulus, mitral inflow with PW.",
       ],
     },
     ar: {
@@ -939,24 +957,23 @@
     },
     tr: {
       title: "Tricuspid Regurgitation",
-      headers: ["Parameter", "Mild", "Moderate", "Severe"],
+      wide: true,
+      headers: ["Parameter", "Mild", "Moderate", "Severe", "Massive", "Torrential"],
       rows: [
-        ["Vena contracta avg (mm)", "<3", "3–6.9", "≥7"],
-        ["PISA radius (mm)", "<5", "6–9", ">9"],
-        ["EROA (cm²)", "<0.2", "0.2–0.39", "0.4–0.59"],
-        ["Reg. vol. (ml)", "<30", "30–44", "45–59"],
-        ["Hepatic vein flow", "S dominant (normal)", "S “blunting”", "Systolic reverse"],
-        ["Color jet", "Small, central", "Moderate", "Large, central/eccentric"],
-        ["CW density", "Faint, incomplete", "Dense", "Dense"],
-        ["CW shape", "Parabolic", "Parabolic", "Triangular"],
-        ["3D VCA (mm²)", "—", "—", "75–94"],
-        ["Jet area (cm²)", "<5", "5–10", ">10"],
+        ["Vena contracta avg (mm)", "<3", "3–6.9", "7–13.9", "14–20", ">20"],
+        ["PISA radius (mm)", "<5", "6–9", ">9", "—", "—"],
+        ["EROA (cm²)", "<0.2", "0.2–0.39", "0.4–0.59", "0.6–0.79", "≥0.8"],
+        ["Reg. vol. (ml)", "<30", "30–44", "45–59", "60–74", "≥75"],
+        ["Hepatic vein flow", "S dominant (normal)", "S “blunting”", "Systolic reverse", "—", "—"],
+        ["Color jet", "Small, central", "Moderate", "Large, central/eccentric", "—", "—"],
+        ["CW density", "Faint, incomplete", "Dense", "Dense", "—", "—"],
+        ["CW shape", "Parabolic", "Parabolic", "Triangular", "—", "—"],
+        ["3D VCA (mm²)", "—", "—", "75–94", "95–114", ">115"],
+        ["Jet area (cm²)", "<5", "5–10", ">10", "—", "—"],
       ],
       notes: [
-        "EROA above severe: 0.6–0.79 cm² is massive, ≥0.8 cm² is torrential.",
-        "Reg. vol. above severe: 60–74 ml is massive, ≥75 ml is torrential.",
-        "Vena contracta above severe: 14–20 mm is massive, >20 mm is torrential — average across several views.",
-        "3D VCA above severe: 95–114 mm² is massive, >115 mm² is torrential (updated cutoffs, 2026-03-13).",
+        "3D VCA massive/torrential cutoffs were updated 2026-03-13.",
+        "Vena contracta should be averaged across several views.",
         "CW shape/density are not always reliable; if Vmax < 2 m/s, likely massive.",
       ],
     },
@@ -977,9 +994,9 @@
         "If Vmax ≤ 2.5 m/s, consider a sclerotic (non-stenotic) aortic valve instead.",
         "Blood pressure outside the normal range affects gradients (lower gradient at higher BP) — always document BP alongside measurements.",
         "Combined lesions can raise the gradient and overestimate severity — affects AVA and DVI too.",
-        "Rule of thumb for small discrepancies: 1 cm² of AVA ≈ 0–35 mmHg of mean gradient. AVA is more sensitive, gradient is more specific.",
+        "Rule of thumb for small discrepancies: 1 cm² of AVA ≈ 35 mmHg of mean gradient. AVA is more sensitive, gradient is more specific.",
         "Always check GLS (and LA strain) — roughly 10% of severe AS is amyloidosis.",
-        "AVAi is only useful at body-size extremes (e.g. very tall/short); it underestimates in obese patients — avoid using it there.",
+        "AVAi is most useful at body-size extremes (e.g. very tall/short); it underestimates in obese patients — avoid using it there.",
       ],
     },
   };
@@ -988,8 +1005,9 @@
     const info = severityInfo[topicKey];
     if (!info) return;
     $("#infoTitle").textContent = info.title;
+    const colClasses = ["", "col-mild", "col-moderate", "col-severe", "col-massive", "col-torrential"];
     const theadCells = info.headers.map((h, i) => {
-      const cls = i === 1 ? "col-mild" : i === 2 ? "col-moderate" : i === 3 ? "col-severe" : "";
+      const cls = colClasses[i] || "";
       return `<th${cls ? ` class="${cls}"` : ""}>${h}</th>`;
     }).join("");
     const bodyRows = info.rows.map(r => {
@@ -1001,7 +1019,7 @@
       : "";
     $("#infoContent").innerHTML = `
       <div class="info-table-wrap">
-        <table class="info-table">
+        <table class="info-table${info.wide ? " wide" : ""}">
           <thead><tr>${theadCells}</tr></thead>
           <tbody>${bodyRows}</tbody>
         </table>
