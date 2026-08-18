@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Echo Calculator</title>
+
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Echo">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#3B82F6">
+
+<style>
+  :root {
+    --bg: #F5F7FA;
+    --card: #FFFFFF;
+    --subtle-bg: #F9FAFB;
+    --input-bg: #F9FAFB;
+    --input-border: #E5E7EB;
+    --input-border-active: #007AFF;
+    --input-border-error: #EF4444;
+    --text-main: #1F2937;
+    --text-sub: #6B7280;
+    --text-placeholder: #9CA3AF;
+    --accent: #3B82F6;
+    --accent-text: #FFFFFF;
+    --result-bg: #F0F9FF;
+    --result-text: #1E40AF;
+    --danger: #EF4444;
+    --danger-text: #FFFFFF;
+    --shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    --divider: #E5E7EB;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0F1420;
+      --card: #171D2B;
+      --subtle-bg: #1E2536;
+      --input-bg: #1B2233;
+      --input-border: #2C3548;
+      --input-border-active: #4C9AFF;
+      --input-border-error: #F87171;
+      --text-main: #E7EAF2;
+      --text-sub: #93A0B8;
+      --text-placeholder: #5B6784;
+      --accent: #3B82F6;
+      --accent-text: #FFFFFF;
+      --result-bg: #16233D;
+      --result-text: #7FB2FF;
+      --danger: #F87171;
+      --danger-text: #1A0E0E;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+      --divider: #26304A;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  .phone {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  header.appbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--divider);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  header.appbar h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .lang-toggle {
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .lang-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  main {
+    flex: 1;
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    background: none;
+    border: none;
+    width: 100%;
+    padding: 4px 0;
+    font-family: inherit;
+    color: var(--text-main);
+  }
+  .card-header:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+  .card-header .title {
+    font-size: 19px;
+    font-weight: 600;
+  }
+
+  .chevron {
+    width: 22px;
+    height: 22px;
+    color: var(--text-main);
+    transition: transform 0.18s ease;
+    flex-shrink: 0;
+  }
+  .card-header[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+  .card-body {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card-body[hidden] { display: none; }
+
+  .subgroup {
+    background: var(--subtle-bg);
+    border-radius: 12px;
+    padding: 8px 8px 4px;
+    border: 1px solid var(--input-border);
+  }
+  .subgroup + .subgroup { margin-top: 12px; }
+  .subgroup-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 4px 4px 12px;
+  }
+  .subgroup .field-stack { padding: 0 4px; display: flex; flex-direction: column; gap: 12px; }
+  .subgroup .field-stack[hidden] { display: none; }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-sub);
+    margin-bottom: 8px;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 2px solid var(--input-border);
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 17px;
+    color: var(--text-main);
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.12s ease;
+  }
+  .field input::placeholder { color: var(--text-placeholder); }
+  .field input:not(:placeholder-shown) { border-color: var(--input-border-active); }
+  .field input.error { border-color: var(--input-border-error) !important; }
+  .field input:focus { outline: none; border-color: var(--input-border-active); }
+  .field .decimal-error {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .heart-rate-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-sub);
+    margin: 4px 0 0;
+  }
+
+  .bsa-toggle {
+    background: none;
+    border: none;
+    color: var(--input-border-active);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 6px 0;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .bsa-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Results */
+  .results-title {
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0 0 16px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--result-bg);
+    border-radius: 8px;
+  }
+  .result-row .label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--result-text);
+  }
+  .result-row .value {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--result-text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .clear-btn {
+    background: var(--danger);
+    color: var(--danger-text);
+    border: none;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    margin: 4px 0 8px;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .clear-btn:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+
+  footer.note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-sub);
+    padding: 4px 20px 24px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <header class="appbar">
+    <h1 id="title">Echo Calculator</h1>
+    <button class="lang-toggle" id="langToggle" type="button">HU</button>
+  </header>
+
+  <main id="main">
+
+    <!-- Patient Data -->
+    <section class="card" data-card="patient">
+      <button class="card-header" type="button" aria-expanded="false">
+        <span class="title" data-t="patientData">Patient Data</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="card-body" hidden>
+        <button class="bsa-toggle" type="button" id="bsaModeToggle" data-t="bsaManual">Enter BSA manually</button>
+
+        <div id="bsaAutoFields">
+          <div class="field">
+            <label data-t-unit="weight|kg">Weight (kg)</label>
+            <input type="text" inputmode="decimal" placeholder="0" data-field="weight">
+            <div class="decimal-error" hidden data-t="decimalError"></div>
+          </div>
+          <div class="field">
+            <label data-t-unit="height|cm">Height (cm)</label>
+            <input type="text" inputmode="decimal" placeholder="0" data-field="height">
+            <div class="decimal-error" hidden data-t="decimalError"></div>
+          </div>
+        </div>
+
+        <div id="bsaManualFields" hidden>
+          <div class="field">
+            <label data-t-unit="bsaResult|m²">BSA (m²)</label>
+            <input type="text" inputmode="decimal" placeholder="0" data-field="bsaManual">
+            <div class="decimal-error" hidden data-t="decimalError"></div>
+          </div>
+        </div>
+
+        <p class="heart-rate-label" data-t="heartRateGroup">Heart Rate</p>
+        <div class="field">
+          <label data-t-unit="heartRate|bpm">Heart Rate (bpm)</label>
+          <input type="text" inputmode="decimal" placeholder="0" data-field="heartRate">
+          <div class="decimal-error" hidden data-t="decimalError"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mitral Valve -->
+    <section class="card" data-card="mitral">
+      <button class="card-header" type="button" aria-expanded="false">
+        <span class="title" data-t="mitralValveGroup">Mitral Valve</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="card-body" hidden>
+        <div class="subgroup">
+          <p class="subgroup-title" data-t="mrPisaGroup">MR PISA</p>
+          <div class="field-stack">
+            <div class="field">
+              <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="mrPisaRadius">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="aliasingVelocity|cm/s">Aliasing velocity (cm/s)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="mrAliasingVelocity">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="vmax|m/s">Vmax (m/s)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="mrVmax">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="vti|cm">VTI (cm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="mrVti">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subgroup">
+          <p class="subgroup-title" data-t="mvVtiPw">MV VTI (PW)</p>
+          <div class="field-stack">
+            <div class="field">
+              <label data-t-unit="|cm">(cm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="mvVtiPw">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Aortic Valve (main) -->
+    <section class="card" data-card="aortic">
+      <button class="card-header" type="button" aria-expanded="false">
+        <span class="title" data-t="aorticValveMainGroup">Aortic Valve</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="card-body" hidden>
+
+        <!-- LVOT subgroup -->
+        <div class="subgroup" data-subcard="lvot">
+          <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
+            <span class="title" style="font-size:16px;" data-t="lvotGroup">LVOT</span>
+            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="field-stack sub-body" hidden style="margin-top:12px;">
+            <div class="field">
+              <label data-t-unit="lvotDiam|mm">LVOT diameter (mm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="lvotDiam">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="lvotVti|cm">LVOT VTI (cm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="lvotVti">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="lvotVmax|m/s">LVOT Vmax (m/s)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="lvotVmax">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aortic valve subgroup -->
+        <div class="subgroup" data-subcard="av">
+          <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
+            <span class="title" style="font-size:16px;" data-t="aorticValveGroup">Aortic Valve</span>
+            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="field-stack sub-body" hidden style="margin-top:12px;">
+            <div class="field">
+              <label data-t-unit="aorticVmax|m/s">Vmax (optional) (m/s)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="aorticVmax">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="meanGradient|mmHg">Mean gradient (optional) (mmHg)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="meanGradient">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="aorticVti|cm">VTI (cm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="aorticVti">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AR PISA subgroup -->
+        <div class="subgroup" data-subcard="arpisa">
+          <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
+            <span class="title" style="font-size:16px;" data-t="arPisaGroup">AR PISA</span>
+            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="field-stack sub-body" hidden style="margin-top:12px;">
+            <div class="field">
+              <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="arPisaRadius">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="aliasingVelocity|cm/s">Aliasing velocity (cm/s)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="arAliasingVelocity">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="vmax|m/s">Vmax (m/s)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="arVmax">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="vti|cm">VTI (cm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="arVti">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tricuspid Valve -->
+    <section class="card" data-card="tricuspid">
+      <button class="card-header" type="button" aria-expanded="false">
+        <span class="title" data-t="tricuspidValveGroup">Tricuspid Valve</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="card-body" hidden>
+        <div class="subgroup">
+          <p class="subgroup-title" data-t="trPisaGroup">TR PISA</p>
+          <div class="field-stack">
+            <div class="field">
+              <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="trPisaRadius">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="aliasingVelocity|cm/s">Aliasing velocity (cm/s)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="trAliasingVelocity">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="vmax|m/s">Vmax (m/s)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="trVmax">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+            <div class="field">
+              <label data-t-unit="vti|cm">VTI (cm)</label>
+              <input type="text" inputmode="decimal" placeholder="0" data-field="trVti">
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="card" id="resultsCard" hidden>
+      <p class="results-title" data-t="results">Calculated Results</p>
+      <div id="resultsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </section>
+
+    <button class="clear-btn" id="clearBtn" type="button" data-t="clear">Clear All</button>
+  </main>
+
+  <footer class="note">Reproduction built from the app's own source (calculatorUtils.js). Not for diagnostic use.</footer>
+</div>
+
+<script>
+(function () {
+  const translations = {
+    en: {
+      title: "Echo Calculator", patientData: "Patient Data", weight: "Weight", height: "Height",
+      bsaResult: "BSA", bsaManual: "Enter BSA manually", bsaCalculate: "Calculate BSA",
+      heartRateGroup: "Heart Rate", heartRate: "Heart Rate",
+      mitralValveGroup: "Mitral Valve", mrPisaGroup: "MR PISA", mvVtiPw: "MV VTI (PW)",
+      aorticValveMainGroup: "Aortic Valve", lvotGroup: "LVOT", aorticValveGroup: "Aortic Valve", arPisaGroup: "AR PISA",
+      tricuspidValveGroup: "Tricuspid Valve", trPisaGroup: "TR PISA",
+      pisaRadius: "PISA radius", aliasingVelocity: "Aliasing velocity", vmax: "Vmax", vti: "VTI",
+      lvotDiam: "LVOT diameter", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
+      aorticVmax: "Vmax (optional)", meanGradient: "Mean gradient (optional)", aorticVti: "VTI",
+      mrEro: "MR ERO", mrRegVol: "MR Reg. vol.", mrRegFraction: "MR Reg. fraction",
+      arEro: "AR ERO", arRegVol: "AR Reg. vol.", arRegFraction: "AR Reg. fraction",
+      trEro: "TR ERO", trRegVol: "TR Reg. vol.",
+      sv: "SV", svi: "SV(i)", cardiacOutput: "Cardiac output", cardiacIndex: "Cardiac Index",
+      ava: "AVA", avai: "AVAi", dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
+      clear: "Clear All", results: "Calculated Results",
+      decimalError: "Please use '.' as decimal separator",
+    },
+    hu: {
+      title: "Echo Kalkulátor", patientData: "Beteg adatok", weight: "Testsúly", height: "Testmagasság",
+      bsaResult: "BSA", bsaManual: "BSA kézi bevitel", bsaCalculate: "BSA számítása",
+      heartRateGroup: "Pulzusszám", heartRate: "Pulzusszám",
+      mitralValveGroup: "Mitrális billentyű", mrPisaGroup: "MR PISA", mvVtiPw: "MV VTI (PW)",
+      aorticValveMainGroup: "Aorta billentyű", lvotGroup: "LVOT", aorticValveGroup: "Aorta billentyű", arPisaGroup: "AR PISA",
+      tricuspidValveGroup: "Tricuspidalis billentyű", trPisaGroup: "TR PISA",
+      pisaRadius: "PISA sugár", aliasingVelocity: "Aliasing sebesség", vmax: "Vmax", vti: "VTI",
+      lvotDiam: "LVOT átmérő", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
+      aorticVmax: "Vmax (opcionális)", meanGradient: "Átlag gradiens (opcionális)", aorticVti: "VTI",
+      mrEro: "MR ERO", mrRegVol: "MR Reg. térfogat", mrRegFraction: "MR Reg. frakció",
+      arEro: "AR ERO", arRegVol: "AR Reg. térfogat", arRegFraction: "AR Reg. frakció",
+      trEro: "TR ERO", trRegVol: "TR Reg. térfogat",
+      sv: "SV", svi: "SV(i)", cardiacOutput: "Perctérfogat", cardiacIndex: "Cardiac Index",
+      ava: "AVA", avai: "AVAi", dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
+      clear: "Összes törlése", results: "Számított eredmények",
+      decimalError: "Kérjük, használja a ',' tizedeselválasztót",
+    },
+  };
+
+  // ---- exact port of calculatorUtils.js ----
+  const parseNumber = (value, lang) => {
+    if (!value) return NaN;
+    const normalized = lang === "hu" ? value.replace(",", ".") : value;
+    return parseFloat(normalized);
+  };
+  const calculateBSA = (weight, height, manualMode, manualValue, lang) => {
+    if (manualMode) {
+      const m = parseNumber(manualValue, lang);
+      return !isNaN(m) && m > 0 ? m : null;
+    }
+    const w = parseNumber(weight, lang), h = parseNumber(height, lang);
+    if (weight && height && !isNaN(w) && !isNaN(h) && w > 0 && h > 0) return Math.sqrt((h * w) / 3600);
+    return null;
+  };
+  const calculateEro = (pisaRadius, aliasing, vmax, lang) => {
+    const r = parseNumber(pisaRadius, lang), a = parseNumber(aliasing, lang), v = parseNumber(vmax, lang);
+    if (pisaRadius && aliasing && vmax && !isNaN(r) && !isNaN(a) && !isNaN(v) && r > 0 && a > 0 && v > 0) {
+      return (2 * Math.PI * Math.pow(r / 10, 2) * a) / (v * 100);
+    }
+    return null;
+  };
+  const calculateRegVol = (ero, vti, lang) => {
+    const v = parseNumber(vti, lang);
+    if (ero !== null && vti && !isNaN(v) && v > 0) return ero * v;
+    return null;
+  };
+  const calculateSV = (lvotDiam, lvotVti, lang) => {
+    const d = parseNumber(lvotDiam, lang), v = parseNumber(lvotVti, lang);
+    if (lvotDiam && lvotVti && !isNaN(d) && !isNaN(v) && d > 0 && v > 0) {
+      return (Math.PI * Math.pow(d / 2, 2) * v) / 100;
+    }
+    return null;
+  };
+  const calculateRegFraction = (regVol, sv) => (regVol !== null && sv !== null && sv > 0) ? (regVol / (sv + regVol)) * 100 : null;
+  const calculateARRegFraction = (arRegVol, sv) => (arRegVol !== null && sv !== null && sv > 0) ? (arRegVol / sv) * 100 : null;
+  const calculateSVI = (sv, bsa) => (sv !== null && bsa !== null && bsa > 0) ? sv / bsa : null;
+  const calculateCardiacOutput = (sv, heartRate, lang) => {
+    const hr = parseNumber(heartRate, lang);
+    if (sv !== null && heartRate && !isNaN(hr) && hr > 0) return (sv / 1000) * hr;
+    return null;
+  };
+  const calculateCardiacIndex = (co, bsa) => (co !== null && bsa !== null && bsa > 0) ? co / bsa : null;
+  const calculateAVA = (lvotDiam, lvotVti, aorticVti, lang) => {
+    const d = parseNumber(lvotDiam, lang), lv = parseNumber(lvotVti, lang), av = parseNumber(aorticVti, lang);
+    if (lvotDiam && lvotVti && aorticVti && !isNaN(d) && !isNaN(lv) && !isNaN(av) && d > 0 && lv > 0 && av > 0) {
+      return (Math.pow(d / 2, 2) * Math.PI * lv) / av / 100;
+    }
+    return null;
+  };
+  const calculateAVAI = (ava, bsa) => (ava !== null && bsa !== null && bsa > 0) ? ava / bsa : null;
+  const calculateDVIVti = (lvotVti, aorticVti, lang) => {
+    const lv = parseNumber(lvotVti, lang), av = parseNumber(aorticVti, lang);
+    if (lvotVti && aorticVti && !isNaN(lv) && !isNaN(av) && av > 0) return lv / av;
+    return null;
+  };
+  const calculateDVIVmax = (lvotVmax, aorticVmax, lang) => {
+    const lv = parseNumber(lvotVmax, lang), av = parseNumber(aorticVmax, lang);
+    if (lvotVmax && aorticVmax && !isNaN(lv) && !isNaN(av) && av > 0) return lv / av;
+    return null;
+  };
+
+  // ---- state ----
+  const state = { language: "hu", bsaManualMode: false };
+  const fieldNames = [
+    "weight","height","bsaManual","heartRate",
+    "mrPisaRadius","mrAliasingVelocity","mrVmax","mrVti","mvVtiPw",
+    "arPisaRadius","arAliasingVelocity","arVmax","arVti",
+    "trPisaRadius","trAliasingVelocity","trVmax","trVti",
+    "lvotDiam","lvotVti","lvotVmax","aorticVmax","meanGradient","aorticVti"
+  ];
+  fieldNames.forEach(f => state[f] = "");
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  function applyTranslations() {
+    const t = translations[state.language];
+    document.documentElement.lang = state.language;
+    $$("[data-t]").forEach(el => {
+      const key = el.getAttribute("data-t");
+      if (t[key] !== undefined) el.textContent = t[key];
+    });
+    $$("[data-t-unit]").forEach(el => {
+      const [key, unit] = el.getAttribute("data-t-unit").split("|");
+      const label = key ? t[key] : "";
+      el.textContent = unit ? `${label} (${unit})`.trim() : label;
+    });
+    $("#bsaModeToggle").textContent = state.bsaManualMode ? t.bsaCalculate : t.bsaManual;
+    $("#langToggle").textContent = state.language === "en" ? "HU" : "EN";
+    document.title = t.title;
+  }
+
+  function checkDecimal(input) {
+    const value = input.value;
+    const wrong = (state.language === "en" && value.includes(",")) || (state.language === "hu" && value.includes("."));
+    const errEl = input.parentElement.querySelector(".decimal-error");
+    input.classList.toggle("error", wrong);
+    if (errEl) errEl.hidden = !wrong;
+  }
+
+  $$("input[data-field]").forEach(input => {
+    input.addEventListener("input", () => {
+      const key = input.dataset.field === "bsaManual" ? "bsaManualValue" : input.dataset.field;
+      state[key] = input.value;
+      checkDecimal(input);
+      computeResults();
+    });
+  });
+
+  $$(".card-header").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const expanded = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!expanded));
+      const body = btn.nextElementSibling;
+      body.hidden = expanded;
+    });
+  });
+
+  $("#bsaModeToggle").addEventListener("click", () => {
+    state.bsaManualMode = !state.bsaManualMode;
+    $("#bsaAutoFields").hidden = state.bsaManualMode;
+    $("#bsaManualFields").hidden = !state.bsaManualMode;
+    applyTranslations();
+    computeResults();
+  });
+
+  $("#langToggle").addEventListener("click", () => {
+    state.language = state.language === "en" ? "hu" : "en";
+    applyTranslations();
+    $$("input[data-field]").forEach(checkDecimal);
+    computeResults();
+  });
+
+  $("#clearBtn").addEventListener("click", () => {
+    fieldNames.forEach(f => state[f] = "");
+    state.bsaManualValue = "";
+    $$("input[data-field]").forEach(i => { i.value = ""; i.classList.remove("error"); });
+    $$(".decimal-error").forEach(e => e.hidden = true);
+    computeResults();
+  });
+
+  function fmt(value) {
+    if (value === null || value === undefined || isNaN(value)) return null;
+    return state.language === "hu" ? value.toFixed(2).replace(".", ",") : value.toFixed(2);
+  }
+
+  function computeResults() {
+    const s = state, lang = s.language;
+    const bsa = calculateBSA(s.weight, s.height, s.bsaManualMode, s.bsaManualValue, lang);
+    const mrEro = calculateEro(s.mrPisaRadius, s.mrAliasingVelocity, s.mrVmax, lang);
+    const mrRegVol = calculateRegVol(mrEro, s.mrVti, lang);
+    const sv = calculateSV(s.lvotDiam, s.lvotVti, lang);
+    const mrRegFraction = calculateRegFraction(mrRegVol, sv);
+    const arEro = calculateEro(s.arPisaRadius, s.arAliasingVelocity, s.arVmax, lang);
+    const arRegVol = calculateRegVol(arEro, s.arVti, lang);
+    const arRegFraction = calculateARRegFraction(arRegVol, sv);
+    const trEro = calculateEro(s.trPisaRadius, s.trAliasingVelocity, s.trVmax, lang);
+    const trRegVol = calculateRegVol(trEro, s.trVti, lang);
+    const svi = calculateSVI(sv, bsa);
+    const cardiacOutput = calculateCardiacOutput(sv, s.heartRate, lang);
+    const cardiacIndex = calculateCardiacIndex(cardiacOutput, bsa);
+    const ava = calculateAVA(s.lvotDiam, s.lvotVti, s.aorticVti, lang);
+    const avai = calculateAVAI(ava, bsa);
+    const dviVti = calculateDVIVti(s.lvotVti, s.aorticVti, lang);
+    const dviVmax = calculateDVIVmax(s.lvotVmax, s.aorticVmax, lang);
+    let mvVtiLvotVti = null;
+    if (s.mvVtiPw && s.lvotVti) {
+      const r = parseFloat(s.mvVtiPw) / parseFloat(s.lvotVti);
+      if (!isNaN(r)) mvVtiLvotVti = r.toFixed(2);
+    }
+
+    const t = translations[lang];
+    const rows = [
+      ["bsaResult", bsa, "m²"],
+      ["mrEro", mrEro, "cm²"],
+      ["mrRegVol", mrRegVol, "ml"],
+      ["mrRegFraction", mrRegFraction, "%"],
+      ["arEro", arEro, "cm²"],
+      ["arRegVol", arRegVol, "ml"],
+      ["arRegFraction", arRegFraction, "%"],
+      ["trEro", trEro, "cm²"],
+      ["trRegVol", trRegVol, "ml"],
+      ["ava", ava, "cm²"],
+      ["avai", avai, "cm²/m²"],
+      ["dviVti", dviVti, ""],
+      ["dviVmax", dviVmax, ""],
+      ["mvVtiLvotVti", mvVtiLvotVti === null ? null : parseFloat(mvVtiLvotVti.replace(",", ".")), ""],
+      ["sv", sv, "ml"],
+      ["svi", svi, "ml/m²"],
+      ["cardiacOutput", cardiacOutput, "l/min"],
+      ["cardiacIndex", cardiacIndex, "l/min/m²"],
+    ];
+
+    const list = $("#resultsList");
+    list.innerHTML = "";
+    let any = false;
+    rows.forEach(([key, val, unit]) => {
+      if (val === null || val === undefined || (typeof val === "number" && isNaN(val))) return;
+      any = true;
+      const row = document.createElement("div");
+      row.className = "result-row";
+      const formatted = fmt(typeof val === "number" ? val : parseFloat(val));
+      row.innerHTML = `<span class="label">${t[key]}</span><span class="value">${formatted}${unit ? " " + unit : ""}</span>`;
+      list.appendChild(row);
+    });
+    $("#resultsCard").hidden = !any;
+  }
+
+  applyTranslations();
+  computeResults();
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+}
+</script>
+</body>
+</html>
