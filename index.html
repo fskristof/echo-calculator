@@ -41,6 +41,8 @@
     --grade-severe-text: #991B1B;
     --grade-extreme-bg: #7F1D1D;
     --grade-extreme-text: #FFFFFF;
+    --grade-elevated-bg: #DBEAFE;
+    --grade-elevated-text: #1E3A8A;
   }
 
   /* Light is the default and always what a fresh visit sees — dark only applies
@@ -72,6 +74,8 @@
     --grade-severe-text: #FCA5A5;
     --grade-extreme-bg: #7F1D1D;
     --grade-extreme-text: #FFE4E6;
+    --grade-elevated-bg: #1E2F52;
+    --grade-elevated-text: #93C5FD;
   }
 
   * { box-sizing: border-box; }
@@ -405,10 +409,11 @@
     letter-spacing: 0.03em;
     white-space: nowrap;
   }
-  .grade-mild { background: var(--grade-mild-bg); color: var(--grade-mild-text); }
-  .grade-moderate { background: var(--grade-moderate-bg); color: var(--grade-moderate-text); }
-  .grade-severe { background: var(--grade-severe-bg); color: var(--grade-severe-text); }
+  .grade-mild, .grade-normal { background: var(--grade-mild-bg); color: var(--grade-mild-text); }
+  .grade-moderate, .grade-mildlyReduced { background: var(--grade-moderate-bg); color: var(--grade-moderate-text); }
+  .grade-severe, .grade-reduced { background: var(--grade-severe-bg); color: var(--grade-severe-text); }
   .grade-massive, .grade-torrential { background: var(--grade-extreme-bg); color: var(--grade-extreme-text); }
+  .grade-elevated { background: var(--grade-elevated-bg); color: var(--grade-elevated-text); }
 
   /* Full-screen info overlay */
   .info-overlay {
@@ -944,8 +949,10 @@
   // Grading bands transcribed from Echo checklist.xlsx.
   // Ambiguous range boundaries are resolved toward the higher-severity side.
   const gradeLabels = {
-    en: { mild: "Mild", moderate: "Moderate", severe: "Severe", massive: "Massive", torrential: "Torrential" },
-    hu: { mild: "Enyhe", moderate: "Közepes", severe: "Súlyos", massive: "Masszív", torrential: "Torrentialis" },
+    en: { mild: "Mild", moderate: "Moderate", severe: "Severe", massive: "Massive", torrential: "Torrential",
+      normal: "Normal", reduced: "Reduced", mildlyReduced: "Mildly reduced", elevated: "Elevated" },
+    hu: { mild: "Enyhe", moderate: "Közepes", severe: "Súlyos", massive: "Masszív", torrential: "Torrentialis",
+      normal: "Normális", reduced: "Csökkent", mildlyReduced: "Enyhén csökkent", elevated: "Emelkedett" },
   };
   const gradeFns = {
     mrEro: v => v < 0.2 ? "mild" : v <= 0.4 ? "moderate" : "severe",
@@ -963,6 +970,10 @@
     // Only a single cutoff is defined for this metric (per user direction):
     // below 1 reads as mild, at/above 1 reads as severe, moderate is unused.
     mvVtiLvotVti: v => v < 1 ? "mild" : "severe",
+    // Cardiac output: normal 4–8 l/min (per user direction).
+    cardiacOutput: v => v < 4 ? "reduced" : v <= 8 ? "normal" : "elevated",
+    // Cardiac index: normal 2.5–4.2 l/min/m², <2.2 reduced, 2.2–2.5 mildly reduced (per user direction).
+    cardiacIndex: v => v < 2.2 ? "reduced" : v < 2.5 ? "mildlyReduced" : v <= 4.2 ? "normal" : "elevated",
   };
 
   // ---- severity reference content ----
@@ -1483,6 +1494,9 @@
     } else if (hasDviVmax) {
       lvotLines.push(`DVI: ${fmt(lastResults.dviVmax)}`);
     }
+    if (lastResults.svi !== null) lvotLines.push(`${t.svi}: ${fmt(lastResults.svi)} ml/m²`);
+    if (lastResults.cardiacOutput !== null) lvotLines.push(`${t.cardiacOutput}: ${fmt(lastResults.cardiacOutput)} l/min`);
+    if (lastResults.cardiacIndex !== null) lvotLines.push(`${t.cardiacIndex}: ${fmt(lastResults.cardiacIndex)} l/min/m²`);
     blocks.push(lvotLines.length ? lvotLines.join("\n") : null);
 
     // AR PISA
