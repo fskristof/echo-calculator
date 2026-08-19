@@ -1432,29 +1432,32 @@
   }
 
   // ---- report text for "Copy to Report" ----
-  // Parses a raw input string and returns it formatted like a calculated
-  // result (localized decimal separator, 2 decimals), or null if empty/invalid.
-  function fmtInput(raw) {
-    const n = parseNumber(raw, state.language);
-    return isNaN(n) ? null : fmt(n);
+  // Raw inputs are echoed exactly as typed (no reformatting, no decimal-
+  // separator conversion) — only trimmed, and only if non-empty.
+  function rawInput(raw) {
+    if (raw === undefined || raw === null) return null;
+    const trimmed = String(raw).trim();
+    return trimmed === "" ? null : trimmed;
   }
 
   // One PISA line: "<Group>: <label>: <val> <unit>; <label>: <val> <unit>; ..."
   // in the fixed order radius, ERO, Reg vol, Reg fraction, Vmax, VTI, Aliasing
   // velocity — regFractionLabel is omitted entirely for TR (not calculated).
+  // Raw inputs (radius/Vmax/VTI/aliasing) are echoed as typed; ERO/Reg vol/Reg
+  // fraction are calculated results and stay formatted via fmt().
   function pisaLine(t, groupLabel, eroLabel, regVolLabel, regFractionLabel,
                      radiusRaw, vmaxRaw, vtiRaw, aliasingRaw, eroVal, regVolVal, regFractionVal) {
     const parts = [];
-    const radius = fmtInput(radiusRaw);
+    const radius = rawInput(radiusRaw);
     if (radius !== null) parts.push(`${t.pisaRadius}: ${radius} mm`);
     if (eroVal !== null) parts.push(`${eroLabel}: ${fmt(eroVal)} cm²`);
     if (regVolVal !== null) parts.push(`${regVolLabel}: ${fmt(regVolVal)} ml`);
     if (regFractionLabel && regFractionVal !== null) parts.push(`${regFractionLabel}: ${fmt(regFractionVal)} %`);
-    const vmax = fmtInput(vmaxRaw);
+    const vmax = rawInput(vmaxRaw);
     if (vmax !== null) parts.push(`${t.vmax}: ${vmax} m/s`);
-    const vti = fmtInput(vtiRaw);
+    const vti = rawInput(vtiRaw);
     if (vti !== null) parts.push(`${t.vti}: ${vti} cm`);
-    const aliasing = fmtInput(aliasingRaw);
+    const aliasing = rawInput(aliasingRaw);
     if (aliasing !== null) parts.push(`${t.aliasingVelocity}: ${aliasing} cm/s`);
     if (parts.length === 0) return null;
     return `${groupLabel}: ${parts.join("; ")}`;
@@ -1465,9 +1468,10 @@
     const s = state;
     const blocks = [];
 
-    // BSA
+    // BSA — echoed as typed if manually entered, otherwise a calculated result
     if (lastResults.bsa !== null) {
-      blocks.push(`${t.bsaResult}: ${fmt(lastResults.bsa)} m²`);
+      const bsaText = s.bsaManualMode ? rawInput(s.bsaManualValue) : fmt(lastResults.bsa);
+      if (bsaText !== null) blocks.push(`${t.bsaResult}: ${bsaText} m²`);
     }
 
     // MR PISA
@@ -1477,11 +1481,11 @@
 
     // LVOT / AV / AVA / DVI block — one line per item, no blank lines between them
     const lvotLines = [];
-    const lvotDiam = fmtInput(s.lvotDiam);
+    const lvotDiam = rawInput(s.lvotDiam);
     if (lvotDiam !== null) lvotLines.push(`${t.lvotDiam}: ${lvotDiam} mm`);
-    const lvotVti = fmtInput(s.lvotVti);
+    const lvotVti = rawInput(s.lvotVti);
     if (lvotVti !== null) lvotLines.push(`${t.lvotVti}: ${lvotVti} cm`);
-    const avVti = fmtInput(s.aorticVti);
+    const avVti = rawInput(s.aorticVti);
     if (avVti !== null) lvotLines.push(`AV VTI: ${avVti} cm`);
     if (lastResults.ava !== null) lvotLines.push(`${t.ava}: ${fmt(lastResults.ava)} cm²`);
     if (lastResults.avai !== null) lvotLines.push(`${t.avai}: ${fmt(lastResults.avai)} cm²/m²`);
@@ -1495,8 +1499,8 @@
       lvotLines.push(`DVI: ${fmt(lastResults.dviVmax)}`);
     }
     if (lastResults.svi !== null) lvotLines.push(`${t.svi}: ${fmt(lastResults.svi)} ml/m²`);
-    if (lastResults.cardiacOutput !== null) lvotLines.push(`${t.cardiacOutput}: ${fmt(lastResults.cardiacOutput)} l/min`);
-    if (lastResults.cardiacIndex !== null) lvotLines.push(`${t.cardiacIndex}: ${fmt(lastResults.cardiacIndex)} l/min/m²`);
+    if (lastResults.cardiacOutput !== null) lvotLines.push(`CO: ${fmt(lastResults.cardiacOutput)} l/min`);
+    if (lastResults.cardiacIndex !== null) lvotLines.push(`CI: ${fmt(lastResults.cardiacIndex)} l/min/m²`);
     blocks.push(lvotLines.length ? lvotLines.join("\n") : null);
 
     // AR PISA
