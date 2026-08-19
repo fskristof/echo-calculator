@@ -1427,6 +1427,29 @@
   //     { label: { en: "Textbook ref, no URL", hu: "Könyv hivatkozás, URL nélkül" } },
   //   ] }
 
+  // Deferred work, recorded so it isn't rediscovered later — check this list
+  // when adding a new topic, since several of these trigger on topic count.
+  //   - Search/filter in the wiki list bar. Trigger: ~8 topics. Category
+  //     grouping buys time; it doesn't replace this.
+  //   - Split wikiTopics out of index.html into wiki.js. Trigger: index.html
+  //     past ~200 KB, or the topics array getting hard to navigate. One
+  //     topic costs ~100 lines / ~14 KB. Must be added to sw.js
+  //     PRECACHE_URLS and share the same version-bump discipline, or
+  //     offline users get an app with an empty wiki.
+  //   - Cross-link severityInfo (MR/AR/TR/AS) and wikiTopics: a
+  //     `wikiTopic: "<id>"` field on a severity entry, rendering a "read
+  //     more" link at the bottom of the info overlay. Natural once a valve
+  //     topic exists.
+  //   - "Copy summary" on a wiki topic, extending the calculator's Copy to
+  //     Report feature. Needs a `summary: { en, hu }` field or a
+  //     text-extraction pass over the body.
+  //   - constriction-diagram.png's labels are brittle: absolutely positioned
+  //     by hardcoded percentage over a raster image, with a fixed dark
+  //     label color because the image background doesn't invert in dark
+  //     mode. Recropping/replacing the image silently misaligns every
+  //     label. If a second photo figure is ever needed, prefer a themed
+  //     inline SVG like cpAlgorithmFigure instead — none of these problems.
+
   // Wiki categories, in list display order. A topic whose `category` is
   // missing or unknown falls into the "other" bucket, rendered last.
   const wikiCategories = [
