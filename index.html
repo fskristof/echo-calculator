@@ -620,6 +620,10 @@
   .wiki-body h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; }
   .wiki-body ul { margin: 0 0 14px; padding-left: 20px; }
   .wiki-body li { margin-bottom: 6px; }
+  .wiki-body a { color: var(--accent); }
+  .wiki-body ol { margin: 0 0 14px; padding-left: 20px; }
+  .wiki-body ol > li { margin-bottom: 10px; }
+  .wiki-body ol ul { margin-top: 6px; margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -1315,7 +1319,144 @@
   // Example entry:
   // { id: "pisa", title: { en: "The PISA method", hu: "A PISA módszer" },
   //   body: { en: "<p>...</p>", hu: "<p>...</p>" } }
-  const wikiTopics = [];
+  const wikiTopics = [
+    {
+      id: "constrictive-pericarditis",
+      title: { en: "Constrictive Pericarditis", hu: "Constrictiv Pericarditis" },
+      body: {
+        en: `
+          <h3>Definition &amp; pathophysiology</h3>
+          <p>A chronically thickened, fibrotic — sometimes calcified — pericardium loses its elasticity and encases the heart like a rigid shell, mechanically limiting diastolic filling. Two hemodynamic hallmarks follow:</p>
+          <ul>
+            <li>Inspiratory drops in intrathoracic pressure don't transmit fully to the encased LA/LV, so LV filling falls with inspiration.</li>
+            <li>Exaggerated ventricular interdependence: as LV filling falls, RV filling rises reciprocally — the mechanism behind Kussmaul's sign.</li>
+          </ul>
+          <p>Restrictive cardiomyopathy (RCM) produces a similar filling pattern, but from myocardial stiffness rather than pericardial constraint — pericardial compliance is normal, so respiratory pressure changes transmit normally. Telling the two apart matters: constriction is often surgically curable (pericardiectomy).</p>
+
+          <h3>Echocardiographic findings in constriction</h3>
+          <ul>
+            <li><strong>2D/M-mode:</strong> septal bounce — abrupt early-diastolic shift of the septum toward the LV with inspiration; septal "shudder". Normal pericardial thickness on echo does <em>not</em> exclude CP — TTE is unreliable for thickness; TEE, CT or MRI are better suited for that.</li>
+            <li><strong>Mitral inflow:</strong> E/A &gt; 1.6, deceleration time usually &lt; 160 ms, peak E velocity falls &gt; 15–25% on the first beat of inspiration (variation is absent in up to a third of CP patients, and unreliable in AF).</li>
+            <li><strong>Tricuspid inflow:</strong> peak E velocity rises &gt; 40% with inspiration, reciprocal to the mitral change.</li>
+            <li><strong>Hepatic veins:</strong> prominent diastolic flow reversal in expiration — stays reliable even in AF.</li>
+            <li><strong>Tissue Doppler (medial e′):</strong> preserved or high (≥ 8–9 cm/s) despite elevated filling pressures — the opposite of restriction. "Annulus reversus": medial e′ ≥ lateral e′, seen in up to 75% of surgically proven CP.</li>
+            <li><strong>Strain:</strong> longitudinal strain preserved, circumferential strain impaired — the reverse pattern from RCM, where longitudinal strain is reduced.</li>
+            <li><strong>IVC:</strong> dilated, &lt;50% collapse with sniff — reflects elevated RA pressure but isn't specific to constriction.</li>
+          </ul>
+          <p><strong>Pitfall — "annulus paradoxus":</strong> because annular motion is exaggerated despite high filling pressures, E/e′ should not be used to estimate LV filling pressure in suspected CP.</p>
+
+          <h3>Constriction vs. restriction — quick comparison</h3>
+          <ul>
+            <li><strong>Septum:</strong> constriction → respirophasic shift; restriction → absent.</li>
+            <li><strong>Medial e′:</strong> constriction → preserved/high (≥8–9 cm/s); restriction → globally reduced.</li>
+            <li><strong>Annulus reversus (medial e′ ≥ lateral e′):</strong> constriction → often present; restriction → absent.</li>
+            <li><strong>Mitral inflow respiratory variation:</strong> constriction → &gt;15% fall on inspiration; restriction → minimal.</li>
+            <li><strong>Hepatic vein expiratory diastolic reversal:</strong> constriction → prominent; restriction → minimal.</li>
+            <li><strong>Longitudinal strain:</strong> constriction → preserved; restriction → reduced.</li>
+            <li><strong>RV/LV systolic pressure with inspiration:</strong> constriction → discordant (opposite directions); restriction → concordant (same direction).</li>
+          </ul>
+
+          <h3>Diagnostic algorithm (ESC/EACVI echo algorithm)</h3>
+          <ol>
+            <li><strong>Screen:</strong> mitral E/A &gt; 0.8 + dilated IVC?<br>→ No: constrictive/restrictive phenotype unlikely.<br>→ Yes: continue.</li>
+            <li><strong>Septal motion:</strong> abnormal respirophasic septal shift (inspiration → increased RV filling → septal bounce toward the LV)?<br>→ No: further imaging (CT/catheterization) if constriction is still suspected.<br>→ Yes: continue.</li>
+            <li><strong>Medial (septal) e′:</strong>
+              <ul>
+                <li>&gt; 8 cm/s → <strong>Constrictive pericarditis</strong></li>
+                <li>6–8 cm/s → <strong>Mixed constriction/restriction</strong></li>
+                <li>&lt; 6 cm/s → <strong>Restrictive cardiomyopathy</strong></li>
+              </ul>
+            </li>
+            <li>If mixed, or suspicion still persists, check further:
+              <ul>
+                <li>Annulus reversus (lateral e′ &lt; medial e′) → constrictive pericarditis</li>
+                <li>Hepatic vein expiratory end-diastolic reversal / antegrade flow ≥ 0.8 → constrictive pericarditis</li>
+              </ul>
+            </li>
+          </ol>
+          <p><strong>Additional supportive findings</strong> (when suspicion persists): DT &lt; 150 ms, IVRT &lt; 50 ms, PV systolic fraction &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
+          <p>When a comprehensive TTE study is diagnostic for constriction, no further testing is usually necessary; cardiac catheterization is reserved for inconclusive or discordant cases.</p>
+
+          <h3>Common causes</h3>
+          <p>Post-cardiac surgery, prior radiation therapy, tuberculosis, and recurrent/viral pericarditis are the most common etiologies. Post-radiation cases often show a mixed constriction/restriction pattern.</p>
+
+          <h3>Pitfalls</h3>
+          <ul>
+            <li>COPD can mimic CP's respiratory inflow variation, but shows a lower E/A ratio, longer deceleration time, and marked inspiratory forward flow in the SVC (absent in CP).</li>
+            <li>Atrial fibrillation makes mitral inflow variation unreliable — lean on medial e′ and hepatic vein findings instead.</li>
+            <li>Normal pericardial thickness on imaging does not exclude constriction.</li>
+          </ul>
+
+          <p><strong>Sources:</strong> <a href="https://www.cardioserv.net/constrictive-pericarditis-vs-restrictive-cardiomyopathy-echo-findings/" target="_blank" rel="noopener">Cardioserv — Constrictive Pericarditis vs Restrictive Cardiomyopathy</a>; <a href="https://www.escardio.org/communities/councils/cardiology-practice/scientific-documents-and-publications/ejournal/volume-15/Constrictive-pericarditis-role-of-echocardiography-and-magnetic-resonance-imaging/" target="_blank" rel="noopener">ESC e-Journal — Constrictive pericarditis: role of echocardiography and MRI</a>; EACVI Imaging Summer School, Graz 2026 (slide reference).</p>
+        `,
+        hu: `
+          <h3>Definíció és patofiziológia</h3>
+          <p>A krónikusan megvastagodott, fibrotikus — néha meszes — pericardium elveszti rugalmasságát, és merev héjként veszi körül a szívet, mechanikusan korlátozva a diasztolés telődést. Ebből két hemodinamikai jellegzetesség következik:</p>
+          <ul>
+            <li>A belégzés során csökkenő intrathoracalis nyomás nem terjed át teljesen a körülzárt bal pitvarra/kamrára, ezért a bal kamrai telődés belégzéskor csökken.</li>
+            <li>Fokozott kamrai interdependencia: ahogy a bal kamrai telődés csökken, a jobb kamrai telődés reciprok módon nő — ez áll a Kussmaul-jel hátterében.</li>
+          </ul>
+          <p>A restriktív cardiomyopathia (RCM) hasonló telődési mintázatot okoz, de a myocardium merevsége, nem a pericardialis korlátozás miatt — a pericardialis compliance normális, így a légzési nyomásváltozások normálisan terjednek át. A kettő elkülönítése azért fontos, mert a constrictio gyakran sebészileg (pericardectomiával) gyógyítható.</p>
+
+          <h3>Echokardiográfiás jelek constrictióban</h3>
+          <ul>
+            <li><strong>2D/M-mode:</strong> septum "bounce" — a septum hirtelen, korai diasztolés elmozdulása a bal kamra felé belégzéskor; septalis "shudder". A normális pericardialis vastagság echoval <em>nem</em> zárja ki a CP-t — a TTE megbízhatatlan a vastagság megítélésében, erre a TEE, CT vagy MRI alkalmasabb.</li>
+            <li><strong>Mitralis beáramlás:</strong> E/A &gt; 1,6, decelerációs idő általában &lt; 160 ms, a csúcs E sebesség &gt; 15–25%-kal csökken a belégzés első ütésében (a variabilitás a CP-s betegek akár egyharmadánál hiányzik, és pitvarfibrillációban nem megbízható).</li>
+            <li><strong>Tricuspidalis beáramlás:</strong> a csúcs E sebesség &gt; 40%-kal nő belégzéskor, reciprok a mitralis változással.</li>
+            <li><strong>Vena hepaticák:</strong> kifejezett diasztolés reverz áramlás kilégzéskor — pitvarfibrillációban is megbízható marad.</li>
+            <li><strong>Szöveti Doppler (medialis e′):</strong> megtartott vagy magas (≥ 8–9 cm/s) az emelkedett telődési nyomások ellenére — ez az ellenkezője a restrictiónak. "Annulus reversus": medialis e′ ≥ lateralis e′, a sebészileg igazolt CP esetek akár 75%-ában megfigyelhető.</li>
+            <li><strong>Strain:</strong> a longitudinális strain megtartott, a circumferentialis strain beszűkült — ez fordított mintázat az RCM-hez képest, ahol a longitudinális strain csökkent.</li>
+            <li><strong>V. cava inferior:</strong> tágult, &lt;50%-os collapsus szimatolásra (sniff) — emelkedett jobb pitvari nyomást tükröz, de nem specifikus constrictióra.</li>
+          </ul>
+          <p><strong>Csapda — "annulus paradoxus":</strong> mivel az annulus mozgása fokozott a magas telődési nyomások ellenére, az E/e′ hányados nem használható a bal kamrai telődési nyomás becslésére feltételezett CP esetén.</p>
+
+          <h3>Constrictio vs. restrictio — gyors összehasonlítás</h3>
+          <ul>
+            <li><strong>Septum:</strong> constrictio → légzésfüggő elmozdulás; restrictio → hiányzik.</li>
+            <li><strong>Medialis e′:</strong> constrictio → megtartott/magas (≥8–9 cm/s); restrictio → globálisan csökkent.</li>
+            <li><strong>Annulus reversus (medialis e′ ≥ lateralis e′):</strong> constrictio → gyakran jelen van; restrictio → hiányzik.</li>
+            <li><strong>Mitralis beáramlás légzési variabilitása:</strong> constrictio → &gt;15%-os csökkenés belégzéskor; restrictio → minimális.</li>
+            <li><strong>Vena hepatica kilégzési diasztolés reverz áramlás:</strong> constrictio → kifejezett; restrictio → minimális.</li>
+            <li><strong>Longitudinális strain:</strong> constrictio → megtartott; restrictio → csökkent.</li>
+            <li><strong>Jobb/bal kamrai szisztolés nyomás belégzéskor:</strong> constrictio → diszkordáns (ellentétes irányú); restrictio → konkordáns (azonos irányú).</li>
+          </ul>
+
+          <h3>Diagnosztikus algoritmus (ESC/EACVI echo algoritmus)</h3>
+          <ol>
+            <li><strong>Szűrés:</strong> mitralis E/A &gt; 0,8 + tágult vena cava inferior?<br>→ Nem: constrictiv/restriktiv fenotípus valószínűtlen.<br>→ Igen: folytatás.</li>
+            <li><strong>Septum mozgás:</strong> kóros, légzésfüggő septum elmozdulás (belégzés → fokozott jobb kamrai telődés → septum "bounce" a bal kamra felé)?<br>→ Nem: további képalkotás (CT/kateterezés), ha a constrictio gyanúja továbbra is fennáll.<br>→ Igen: folytatás.</li>
+            <li><strong>Medialis (septalis) e′:</strong>
+              <ul>
+                <li>&gt; 8 cm/s → <strong>Constrictiv pericarditis</strong></li>
+                <li>6–8 cm/s → <strong>Kevert constrictio/restrictio</strong></li>
+                <li>&lt; 6 cm/s → <strong>Restriktiv cardiomyopathia</strong></li>
+              </ul>
+            </li>
+            <li>Kevert kép, vagy ha a gyanú továbbra is fennáll:
+              <ul>
+                <li>Annulus reversus (lateralis e′ &lt; medialis e′) → constrictiv pericarditis</li>
+                <li>Vena hepatica kilégzési, end-diasztolés reverz/antegrád áramlásának aránya ≥ 0,8 → constrictiv pericarditis</li>
+              </ul>
+            </li>
+          </ol>
+          <p><strong>További, alátámasztó jelek</strong> (ha a gyanú továbbra is fennáll): DT &lt; 150 ms, IVRT &lt; 50 ms, pulmonalis vénás szisztolés frakció &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
+          <p>Ha egy átfogó TTE vizsgálat diagnosztikus constrictióra, további vizsgálat általában nem szükséges; a szívkatéterezés a nem egyértelmű vagy ellentmondó esetek számára van fenntartva.</p>
+
+          <h3>Gyakori okok</h3>
+          <p>A leggyakoribb etiológiák: szívműtét utáni állapot, korábbi sugárkezelés, tuberkulózis, valamint recidiváló/virális pericarditis. A sugárkezelés utáni esetek gyakran kevert constrictiv/restriktiv mintázatot mutatnak.</p>
+
+          <h3>Buktatók</h3>
+          <ul>
+            <li>A COPD utánozhatja a CP légzésfüggő beáramlási variabilitását, de alacsonyabb E/A hányadossal, hosszabb decelerációs idővel és kifejezett belégzési előremenő áramlással jár a vena cava superiorban (ami CP-ben hiányzik).</li>
+            <li>Pitvarfibrillációban a mitralis beáramlás variabilitása nem megbízható — ilyenkor a medialis e′-re és a vena hepatica jelekre érdemes támaszkodni.</li>
+            <li>A normális pericardialis vastagság képalkotáson nem zárja ki a constrictiót.</li>
+          </ul>
+
+          <p><strong>Források:</strong> <a href="https://www.cardioserv.net/constrictive-pericarditis-vs-restrictive-cardiomyopathy-echo-findings/" target="_blank" rel="noopener">Cardioserv — Constrictive Pericarditis vs Restrictive Cardiomyopathy</a>; <a href="https://www.escardio.org/communities/councils/cardiology-practice/scientific-documents-and-publications/ejournal/volume-15/Constrictive-pericarditis-role-of-echocardiography-and-magnetic-resonance-imaging/" target="_blank" rel="noopener">ESC e-Journal — Constrictive pericarditis: role of echocardiography and MRI</a>; EACVI Imaging Summer School, Graz 2026 (dia hivatkozás).</p>
+        `,
+      },
+    },
+  ];
 
   let currentWikiTopic = null;
 
