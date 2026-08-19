@@ -607,6 +607,39 @@
   }
   .wiki-topic-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .wiki-topic-item svg { width: 18px; height: 18px; color: var(--text-sub); flex-shrink: 0; }
+  .wiki-topic-item .wiki-topic-title { flex: 1; min-width: 0; }
+  .wiki-kind-chip {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: var(--subtle-bg);
+    color: var(--text-sub);
+    flex-shrink: 0;
+  }
+  .wiki-search-row {
+    padding: 10px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--divider);
+    flex-shrink: 0;
+  }
+  .wiki-search-row[hidden] { display: none; }
+  .wiki-search-row input[type="search"] {
+    width: 100%;
+    background: var(--input-bg);
+    border: 2px solid var(--input-border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 15px;
+    color: var(--text-main);
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .wiki-search-row input[type="search"]::placeholder { color: var(--text-placeholder); }
+  .wiki-search-row input[type="search"]:focus { outline: none; border-color: var(--input-border-active); }
   .wiki-cat {
     font-size: 12px;
     font-weight: 700;
@@ -687,6 +720,26 @@
     line-height: 1.55;
   }
   .wiki-callout a { color: inherit; text-decoration: underline; }
+  /* Deliberately reuses the calculator's own result-row colors, so this
+     reads as "the answer" in the same visual language as its output. */
+  .wiki-summary {
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    background: var(--result-bg);
+    color: var(--result-text);
+    border-radius: 12px;
+  }
+  .wiki-summary h3 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 8px;
+    opacity: 0.75;
+  }
+  .wiki-summary ul { margin: 0; padding-left: 18px; }
+  .wiki-summary li { margin-bottom: 6px; font-size: 14.5px; line-height: 1.5; }
+  .wiki-summary li:last-child { margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -972,6 +1025,9 @@
       <button class="info-close" type="button" id="wikiClose" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
+    </div>
+    <div class="wiki-search-row" id="wikiSearchRow" hidden>
+      <input type="search" id="wikiSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="info-content" id="wikiContent"></div>
   </div>
@@ -1300,11 +1356,15 @@
       notes: "Notes", close: "Close", back: "Back",
       sources: "Sources", reviewed: "Last reviewed",
       disclaimer: "Reference summary — not a substitute for clinical judgement or current guidelines.",
+      atMachine: "At the machine", card: "Card",
+      searchPlaceholder: "Search topics", noResults: "No matching topics.",
     },
     hu: {
       notes: "Megjegyzések", close: "Bezárás", back: "Vissza",
       sources: "Források", reviewed: "Utoljára ellenőrizve",
       disclaimer: "Referencia-összefoglaló — nem helyettesíti a klinikai megítélést vagy az aktuális irányelveket.",
+      atMachine: "A gép mellett", card: "Kártya",
+      searchPlaceholder: "Témák keresése", noResults: "Nincs találat.",
     },
   };
   const infoAriaLabels = {
@@ -1412,25 +1472,44 @@
 
   // ---- Echo Wiki ----
   // Add new topics here as they're written — each needs a stable id, a
-  // category (must match a wikiCategories id below), a title, a body per
-  // language, and a sources array. body is raw HTML (wrapped in .wiki-body),
-  // so <p>, <h3>, <ul>/<li>, <ol>, .wiki-figure, .wiki-callout, and
-  // .info-table-wrap/.info-table all work. No <h2>/<h4>. Topics render in
-  // category order (see wikiCategories), then array order within a category.
+  // category (must match a wikiCategories id below), and a title. Two
+  // shapes, controlled by `kind` (optional, defaults to "deep"):
+  //   kind: "deep" — full entry: optional summary, optional table, body,
+  //         sources. body is raw HTML (wrapped in .wiki-body), so <p>, <h3>,
+  //         <ul>/<li>, <ol>, .wiki-figure, .wiki-callout, and
+  //         .info-table-wrap/.info-table (via buildSeverityTable()) all
+  //         work. No <h2>/<h4>.
+  //   kind: "card" — quick card: summary (+ optional table), no body. A
+  //         card omits `body` entirely — every topic.body access must be
+  //         guarded, and so must the drift/summary-parity audit below.
+  // `summary` is the "at the machine" block rendered above the body (deep)
+  // or as the main content (card): an array of short plain strings, same
+  // language order and *line count* on both sides — not an HTML string, so
+  // it can't quietly grow into a paragraph and so EN/HU parity is a simple
+  // length check (see auditWikiTopics). Inline <strong> is fine; no block
+  // elements.
+  // `keywords` (optional) extends what the list-view search matches beyond
+  // the title.
+  // Topics render in category order (see wikiCategories), then array order
+  // within a category; card rows get a small "Card" chip so it's clear
+  // before opening whether it's five lines or a full entry.
   //
-  // Example entry:
-  // { id: "pisa", category: "valves", reviewed: "2026-08",
-  //   title: { en: "The PISA method", hu: "A PISA módszer" },
+  // Example entries:
+  // { id: "pisa", category: "methods", kind: "deep", reviewed: "2026-08",
+  //   title:    { en: "The PISA method", hu: "A PISA módszer" },
+  //   summary:  { en: ["Set aliasing 15–40 cm/s...", "..."], hu: ["...", "..."] },
+  //   keywords: { en: ["pisa", "eroa"], hu: ["pisa", "eroa"] },
   //   body: { en: "<p>...</p>", hu: "<p>...</p>" },
   //   sources: [
   //     { url: "https://...", label: { en: "...", hu: "..." } },
   //     { label: { en: "Textbook ref, no URL", hu: "Könyv hivatkozás, URL nélkül" } },
   //   ] }
+  // { id: "continuity-equation", category: "methods", kind: "card",
+  //   title: { en: "The continuity equation", hu: "A kontinuitási egyenlet" },
+  //   summary: { en: ["..."], hu: ["..."] } }
 
   // Deferred work, recorded so it isn't rediscovered later — check this list
   // when adding a new topic, since several of these trigger on topic count.
-  //   - Search/filter in the wiki list bar. Trigger: ~8 topics. Category
-  //     grouping buys time; it doesn't replace this.
   //   - Split wikiTopics out of index.html into wiki.js. Trigger: index.html
   //     past ~200 KB, or the topics array getting hard to navigate. One
   //     topic costs ~100 lines / ~14 KB. Must be added to sw.js
@@ -1450,6 +1529,7 @@
   // Wiki categories, in list display order. A topic whose `category` is
   // missing or unknown falls into the "other" bucket, rendered last.
   const wikiCategories = [
+    { id: "methods",      label: { en: "Methods & measurement", hu: "Módszerek és mérés" } },
     { id: "pericardium",  label: { en: "Pericardium",   hu: "Pericardium" } },
     { id: "valves",       label: { en: "Valves",        hu: "Billentyűk" } },
     { id: "myocardium",   label: { en: "Myocardium",    hu: "Myocardium" } },
@@ -1746,30 +1826,64 @@
   // HU decimal commas are normalised to dots first. SVG coordinates appear
   // in both bodies identically, so they cancel out. Console-only, dev-gated
   // — never runs for production users.
-  function auditWikiNumbers() {
+  // Dev guard: EN/HU should carry the same numbers, and a summary's two
+  // language arrays should have the same line count. A mismatch almost
+  // always means one language got edited and the other didn't — the single
+  // largest maintenance risk here, since every fact exists twice. Topics
+  // lacking a body (cards) or a summary are skipped for that respective
+  // check rather than erroring; a topic with *one* language present and the
+  // other missing is a genuine contract violation and is left to throw
+  // loudly instead of being silently swallowed.
+  function auditWikiTopics() {
     const tokens = (html) => (html
       .replace(/<[^>]*>/g, " ")
       .replace(/(\d),(\d)/g, "$1.$2")
       .match(/\d+(?:\.\d+)?/g) || []).sort().join(" ");
     wikiTopics.forEach(t => {
-      const en = tokens(t.body.en), hu = tokens(t.body.hu);
-      if (en !== hu) {
-        console.warn(`[wiki] numeric drift in "${t.id}"\n  en: ${en}\n  hu: ${hu}`);
+      if (t.body) {
+        const en = tokens(t.body.en), hu = tokens(t.body.hu);
+        if (en !== hu) {
+          console.warn(`[wiki] numeric drift in "${t.id}"\n  en: ${en}\n  hu: ${hu}`);
+        }
+      }
+      if (t.summary) {
+        const enLen = t.summary.en.length, huLen = t.summary.hu.length;
+        if (enLen !== huLen) {
+          console.warn(`[wiki] summary line-count mismatch in "${t.id}": en=${enLen} hu=${huLen}`);
+        }
       }
     });
   }
   if (location.hostname === "localhost" ||
       location.hostname === "127.0.0.1" ||
       location.search.includes("audit")) {
-    auditWikiNumbers();
+    auditWikiTopics();
   }
 
   let currentWikiTopic = null;
+  let wikiSearchQuery = "";
+  // Accent- and case-insensitive fold, e.g. "billentyu" matches "Billentyűk".
+  // Hungarian ő/ű decompose under NFD to a base letter + U+030B (COMBINING
+  // DOUBLE ACUTE ACCENT), which falls inside the combining-marks range
+  // stripped below, so double acutes fold correctly along with plain
+  // accents.
+  const foldWikiText = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  function wikiTopicMatchesQuery(topic, foldedQuery) {
+    const lang = state.language;
+    if (foldWikiText(topic.title[lang]).includes(foldedQuery)) return true;
+    const kw = topic.keywords && topic.keywords[lang];
+    return !!kw && kw.some(k => foldWikiText(k).includes(foldedQuery));
+  }
 
   function renderWikiTopicButton(topic) {
+    const chip = topic.kind === "card"
+      ? `<span class="wiki-kind-chip">${uiStrings[state.language].card}</span>`
+      : "";
     return `
       <button class="wiki-topic-item" type="button" data-wiki-topic="${topic.id}">
-        <span>${topic.title[state.language]}</span>
+        <span class="wiki-topic-title">${topic.title[state.language]}</span>
+        ${chip}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
       </button>
     `;
@@ -1777,8 +1891,24 @@
 
   function renderWikiList() {
     $("#wikiTitle").textContent = translations[state.language].wikiTitle;
+    $("#wikiSearchRow").hidden = false;
     if (wikiTopics.length === 0) {
       $("#wikiContent").innerHTML = `<div class="wiki-empty">${translations[state.language].wikiEmpty}</div>`;
+      $("#wikiContent").scrollTop = 0;
+      return;
+    }
+    const query = wikiSearchQuery.trim();
+    if (query) {
+      // A targeted lookup wants a flat list, not browsing — drop the
+      // category headings while a query is active.
+      const folded = foldWikiText(query);
+      const matches = wikiTopics.filter(t => wikiTopicMatchesQuery(t, folded));
+      $("#wikiContent").innerHTML = matches.length
+        ? `<div class="wiki-topic-list">${matches.map(renderWikiTopicButton).join("")}</div>`
+        : `<div class="wiki-empty">${uiStrings[state.language].noResults}</div>`;
+      $$("[data-wiki-topic]", $("#wikiContent")).forEach(btn => {
+        btn.addEventListener("click", () => openWikiTopic(btn.dataset.wikiTopic));
+      });
       $("#wikiContent").scrollTop = 0;
       return;
     }
@@ -1806,6 +1936,16 @@
     $("#wikiContent").scrollTop = 0;
   }
 
+  function renderWikiSummary(topic, lang) {
+    if (!topic.summary || !topic.summary[lang] || !topic.summary[lang].length) return "";
+    const items = topic.summary[lang].map(line => `<li>${line}</li>`).join("");
+    return `
+      <div class="wiki-summary">
+        <h3>${uiStrings[lang].atMachine}</h3>
+        <ul>${items}</ul>
+      </div>`;
+  }
+
   function renderWikiSources(topic, lang) {
     if (!topic.sources || !topic.sources.length) return "";
     const items = topic.sources.map(s => {
@@ -1829,9 +1969,16 @@
   function renderWikiTopic(id) {
     const topic = wikiTopics.find(t => t.id === id);
     if (!topic) { renderWikiList(); return; }
-    $("#wikiTitle").textContent = topic.title[state.language];
-    $("#wikiContent").innerHTML =
-      `<div class="wiki-body">${topic.body[state.language]}${renderWikiSources(topic, state.language)}</div>`;
+    const lang = state.language;
+    $("#wikiTitle").textContent = topic.title[lang];
+    $("#wikiSearchRow").hidden = true;
+    const summaryHtml = renderWikiSummary(topic, lang);
+    const tableHtml = topic.table ? buildSeverityTable(topic.table) : "";
+    // Cards omit `body` entirely — guard the access rather than assume it.
+    const bodyHtml = (topic.kind !== "card" && topic.body)
+      ? `<div class="wiki-body">${topic.body[lang]}</div>`
+      : "";
+    $("#wikiContent").innerHTML = `${summaryHtml}${tableHtml}${bodyHtml}${renderWikiSources(topic, lang)}`;
     $("#wikiContent").scrollTop = 0;
   }
 
@@ -1861,6 +2008,7 @@
       if (!overlay.hidden) teardownOverlay();
       currentWikiTopic = null;
       overlay.hidden = true;
+      clearWikiSearch();
       return;
     }
     const wasHidden = overlay.hidden;
@@ -1879,7 +2027,14 @@
     syncWikiToHash();
   }
 
-  function openWiki()        { goWiki("#wiki"); }
+  // Search is view state, not a route — it's reset (not persisted) across
+  // opens, closes, and language switches, and never pushes history.
+  function clearWikiSearch() {
+    wikiSearchQuery = "";
+    $("#wikiSearchInput").value = "";
+  }
+
+  function openWiki()        { clearWikiSearch(); goWiki("#wiki"); }
   function openWikiTopic(id) { goWiki(`#wiki/${encodeURIComponent(id)}`); }
   // The back button is always visible (list page included). From a topic
   // it goes back to the list; from the list itself there's nowhere
@@ -1896,6 +2051,8 @@
     $("#wikiBack").setAttribute("aria-label", uiStrings[state.language].back);
     $("#wikiClose").setAttribute("aria-label", uiStrings[state.language].close);
     $("#wikiBtn").setAttribute("aria-label", translations[state.language].wikiTitle);
+    $("#wikiSearchInput").placeholder = uiStrings[state.language].searchPlaceholder;
+    clearWikiSearch();
     if (!$("#wikiOverlay").hidden) {
       if (currentWikiTopic) renderWikiTopic(currentWikiTopic);
       else renderWikiList();
@@ -2019,6 +2176,10 @@
   $("#wikiBtn").addEventListener("click", openWiki);
   $("#wikiClose").addEventListener("click", closeWiki);
   $("#wikiBack").addEventListener("click", handleWikiBack);
+  $("#wikiSearchInput").addEventListener("input", (e) => {
+    wikiSearchQuery = e.target.value;
+    renderWikiList();
+  });
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
