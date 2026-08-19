@@ -1342,25 +1342,25 @@
       ? {
         caption: "Az ESC/EACVI diagnosztikus echo algoritmus döntési útja constrictiv pericarditis gyanúja esetén.",
         step1a: "Mitralis E/A > 0,8", step1b: "+ tágult VCI?",
-        exit1a: "CP/RCM", exit1b: "valószínűtlen",
+        exit1: "Valószínűtlen",
         step2a: "Kóros légzésfüggő", step2b: "septum elmozdulás?",
         exit2a: "További képalkotás", exit2b: "(CT / kateterezés)",
         step3: "Medialis e′ (septalis)",
-        pillCP: "CP", pillMixed: "Kevert", pillRestr: "Restrictio",
-        step4a: "Annulus reversus, vagy vena hepatica", step4b: "reverz áramlás ≥ 0,8?",
-        finalCP: "CP", finalMixed: "Kevert",
+        pillCP: "Constrictio", pillMixed: "Kevert", pillRestr: "Restrictio",
+        step4a: "Annulus reversus, vagy vena hepatica", step4b: "diasztolés reverz áramlás ≥ 0,8?",
+        finalCP: "Constrictio", finalMixed: "Kevert",
         yes: "igen", no: "nem",
       }
       : {
-        caption: "The ESC/EACVI diagnostic echo algorithm's decision path when constrictive pericarditis is suspected.",
+        caption: "The ESC/EACVI diagnostic echo algorithm's decision path when constriction is suspected.",
         step1a: "Mitral E/A > 0.8", step1b: "+ dilated IVC?",
-        exit1a: "CP/RCM", exit1b: "unlikely",
+        exit1: "Unlikely",
         step2a: "Abnormal respirophasic", step2b: "septal shift?",
         exit2a: "Further imaging", exit2b: "(CT / catheterization)",
         step3: "Medial e′ (septal)",
-        pillCP: "CP", pillMixed: "Mixed", pillRestr: "RCM",
-        step4a: "Annulus reversus, or hepatic", step4b: "vein reversal ≥ 0.8?",
-        finalCP: "CP", finalMixed: "Mixed",
+        pillCP: "Constriction", pillMixed: "Mixed", pillRestr: "RCM",
+        step4a: "Annulus reversus, or hepatic vein", step4b: "diastolic reversal ≥ 0.8?",
+        finalCP: "Constriction", finalMixed: "Mixed",
         yes: "yes", no: "no",
       };
     return `
@@ -1377,8 +1377,7 @@
           <text x="125" y="38" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.step1a}</text>
           <text x="125" y="54" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.step1b}</text>
           <rect x="255" y="16" width="110" height="54" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
-          <text x="310" y="38" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.exit1a}</text>
-          <text x="310" y="54" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.exit1b}</text>
+          <text x="310" y="47" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.exit1}</text>
           <line x1="125" y1="70" x2="125" y2="106" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
           <rect x="131" y="82" width="26" height="14" fill="var(--bg)"></rect>
           <text x="144" y="93" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.yes}</text>
@@ -1415,11 +1414,11 @@
           <text x="269" y="275" text-anchor="middle" font-size="10.5" fill="var(--text-sub)">&lt; 6 cm/s</text>
 
           <rect x="20" y="300" width="100" height="44" rx="10" fill="var(--grade-mild-bg)"></rect>
-          <text x="70" y="327" text-anchor="middle" font-size="13" font-weight="700" fill="var(--grade-mild-text)">${t.pillCP}</text>
+          <text x="70" y="326" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--grade-mild-text)">${t.pillCP}</text>
           <rect x="140" y="300" width="100" height="44" rx="10" fill="var(--grade-moderate-bg)"></rect>
-          <text x="190" y="327" text-anchor="middle" font-size="13" font-weight="700" fill="var(--grade-moderate-text)">${t.pillMixed}</text>
+          <text x="190" y="326" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--grade-moderate-text)">${t.pillMixed}</text>
           <rect x="260" y="300" width="100" height="44" rx="10" fill="var(--grade-severe-bg)"></rect>
-          <text x="310" y="327" text-anchor="middle" font-size="13" font-weight="700" fill="var(--grade-severe-text)">${t.pillRestr}</text>
+          <text x="310" y="326" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--grade-severe-text)">${t.pillRestr}</text>
 
           <!-- Step 4: only reached from the Mixed pill -->
           <line x1="190" y1="344" x2="190" y2="396" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
@@ -1435,9 +1434,9 @@
           <text x="265" y="481" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.no}</text>
 
           <rect x="60" y="490" width="110" height="44" rx="10" fill="var(--grade-mild-bg)"></rect>
-          <text x="115" y="517" text-anchor="middle" font-size="13" font-weight="700" fill="var(--grade-mild-text)">${t.finalCP}</text>
+          <text x="115" y="517" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--grade-mild-text)">${t.finalCP}</text>
           <rect x="210" y="490" width="110" height="44" rx="10" fill="var(--grade-moderate-bg)"></rect>
-          <text x="265" y="517" text-anchor="middle" font-size="13" font-weight="700" fill="var(--grade-moderate-text)">${t.finalMixed}</text>
+          <text x="265" y="517" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--grade-moderate-text)">${t.finalMixed}</text>
         </svg>
         <figcaption>${t.caption}</figcaption>
       </figure>
@@ -1460,15 +1459,15 @@
 
           <h3>Echocardiographic findings in constriction</h3>
           <ul>
-            <li><strong>2D/M-mode:</strong> septal bounce — abrupt early-diastolic shift of the septum toward the LV with inspiration; septal "shudder". Normal pericardial thickness on echo does <em>not</em> exclude CP — TTE is unreliable for thickness; TEE, CT or MRI are better suited for that.</li>
-            <li><strong>Mitral inflow:</strong> E/A &gt; 1.6, deceleration time usually &lt; 160 ms, peak E velocity falls &gt; 15–25% on the first beat of inspiration (variation is absent in up to a third of CP patients, and unreliable in AF).</li>
+            <li><strong>2D/M-mode:</strong> septal bounce — an abrupt early-diastolic shift of the septum toward the LV, following the respiratory cycle (most pronounced on the first beat of inspiration); septal "shudder". Normal pericardial thickness on echo does <em>not</em> exclude constriction — TTE is unreliable for thickness; TEE, CT or MRI are better suited for that.</li>
+            <li><strong>Mitral inflow:</strong> E/A &gt; 1.6, deceleration time usually &lt; 160 ms, peak E velocity falls &gt; 15–25% on the first beat of inspiration (variation is absent in up to a third of patients with constriction, and unreliable in AF).</li>
             <li><strong>Tricuspid inflow:</strong> peak E velocity rises &gt; 40% with inspiration, reciprocal to the mitral change.</li>
             <li><strong>Hepatic veins:</strong> prominent diastolic flow reversal in expiration — stays reliable even in AF.</li>
-            <li><strong>Tissue Doppler (medial e′):</strong> preserved or high (≥ 8–9 cm/s) despite elevated filling pressures — the opposite of restriction. "Annulus reversus": medial e′ ≥ lateral e′, seen in up to 75% of surgically proven CP.</li>
+            <li><strong>Tissue Doppler (medial e′):</strong> preserved or high (≥ 8–9 cm/s) despite elevated filling pressures — the opposite of restriction. "Annulus reversus": medial e′ ≥ lateral e′, seen in up to 75% of surgically proven constriction.</li>
             <li><strong>Strain:</strong> longitudinal strain preserved, circumferential strain impaired — the reverse pattern from RCM, where longitudinal strain is reduced.</li>
             <li><strong>IVC:</strong> dilated, &lt;50% collapse with sniff — reflects elevated RA pressure but isn't specific to constriction.</li>
           </ul>
-          <p><strong>Pitfall — "annulus paradoxus":</strong> because annular motion is exaggerated despite high filling pressures, E/e′ should not be used to estimate LV filling pressure in suspected CP.</p>
+          <p><strong>Important! – "annulus paradoxus":</strong> because annular motion is exaggerated despite high filling pressures, E/e′ should not be used to estimate LV filling pressure in suspected constriction.</p>
 
           <h3>Constriction vs. restriction — quick comparison</h3>
           <ul>
@@ -1482,23 +1481,6 @@
           </ul>
 
           <h3>Diagnostic algorithm (ESC/EACVI echo algorithm)</h3>
-          <ol>
-            <li><strong>Screen:</strong> mitral E/A &gt; 0.8 + dilated IVC?<br>→ No: constrictive/restrictive phenotype unlikely.<br>→ Yes: continue.</li>
-            <li><strong>Septal motion:</strong> abnormal respirophasic septal shift (inspiration → increased RV filling → septal bounce toward the LV)?<br>→ No: further imaging (CT/catheterization) if constriction is still suspected.<br>→ Yes: continue.</li>
-            <li><strong>Medial (septal) e′:</strong>
-              <ul>
-                <li>&gt; 8 cm/s → <strong>Constrictive pericarditis</strong></li>
-                <li>6–8 cm/s → <strong>Mixed constriction/restriction</strong></li>
-                <li>&lt; 6 cm/s → <strong>Restrictive cardiomyopathy</strong></li>
-              </ul>
-            </li>
-            <li>If mixed, or suspicion still persists, check further:
-              <ul>
-                <li>Annulus reversus (lateral e′ &lt; medial e′) → constrictive pericarditis</li>
-                <li>Hepatic vein expiratory end-diastolic reversal / antegrade flow ≥ 0.8 → constrictive pericarditis</li>
-              </ul>
-            </li>
-          </ol>
           ${cpAlgorithmFigure("en")}
           <p><strong>Additional supportive findings</strong> (when suspicion persists): DT &lt; 150 ms, IVRT &lt; 50 ms, PV systolic fraction &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
           <p>When a comprehensive TTE study is diagnostic for constriction, no further testing is usually necessary; cardiac catheterization is reserved for inconclusive or discordant cases.</p>
@@ -1508,7 +1490,7 @@
 
           <h3>Pitfalls</h3>
           <ul>
-            <li>COPD can mimic CP's respiratory inflow variation, but shows a lower E/A ratio, longer deceleration time, and marked inspiratory forward flow in the SVC (absent in CP).</li>
+            <li>COPD can mimic constriction's respiratory inflow variation, but shows a lower E/A ratio, longer deceleration time, and marked inspiratory forward flow in the SVC (absent in constriction).</li>
             <li>Atrial fibrillation makes mitral inflow variation unreliable — lean on medial e′ and hepatic vein findings instead.</li>
             <li>Normal pericardial thickness on imaging does not exclude constriction.</li>
           </ul>
@@ -1526,15 +1508,15 @@
 
           <h3>Echokardiográfiás jelek constrictióban</h3>
           <ul>
-            <li><strong>2D/M-mode:</strong> septum "bounce" — a septum hirtelen, korai diasztolés elmozdulása a bal kamra felé belégzéskor; septalis "shudder". A normális pericardialis vastagság echoval <em>nem</em> zárja ki a CP-t — a TTE megbízhatatlan a vastagság megítélésében, erre a TEE, CT vagy MRI alkalmasabb.</li>
-            <li><strong>Mitralis beáramlás:</strong> E/A &gt; 1,6, decelerációs idő általában &lt; 160 ms, a csúcs E sebesség &gt; 15–25%-kal csökken a belégzés első ütésében (a variabilitás a CP-s betegek akár egyharmadánál hiányzik, és pitvarfibrillációban nem megbízható).</li>
+            <li><strong>2D/M-mode:</strong> septum "bounce" — a septum hirtelen, korai diasztolés elmozdulása a bal kamra felé, a légzési ciklust követve (a belégzés első ütésében a legkifejezettebb); septalis "shudder". A normális pericardialis vastagság echoval <em>nem</em> zárja ki a constrictiót — a TTE megbízhatatlan a vastagság megítélésében, erre a TEE, CT vagy MRI alkalmasabb.</li>
+            <li><strong>Mitralis beáramlás:</strong> E/A &gt; 1,6, decelerációs idő általában &lt; 160 ms, a csúcs E sebesség &gt; 15–25%-kal csökken a belégzés első ütésében (a variabilitás a constrictiós betegek akár egyharmadánál hiányzik, és pitvarfibrillációban nem megbízható).</li>
             <li><strong>Tricuspidalis beáramlás:</strong> a csúcs E sebesség &gt; 40%-kal nő belégzéskor, reciprok a mitralis változással.</li>
             <li><strong>Vena hepaticák:</strong> kifejezett diasztolés reverz áramlás kilégzéskor — pitvarfibrillációban is megbízható marad.</li>
-            <li><strong>Szöveti Doppler (medialis e′):</strong> megtartott vagy magas (≥ 8–9 cm/s) az emelkedett telődési nyomások ellenére — ez az ellenkezője a restrictiónak. "Annulus reversus": medialis e′ ≥ lateralis e′, a sebészileg igazolt CP esetek akár 75%-ában megfigyelhető.</li>
+            <li><strong>Szöveti Doppler (medialis e′):</strong> megtartott vagy magas (≥ 8–9 cm/s) az emelkedett telődési nyomások ellenére — ez az ellenkezője a restrictiónak. "Annulus reversus": medialis e′ ≥ lateralis e′, a sebészileg igazolt constrictiós esetek akár 75%-ában megfigyelhető.</li>
             <li><strong>Strain:</strong> a longitudinális strain megtartott, a circumferentialis strain beszűkült — ez fordított mintázat az RCM-hez képest, ahol a longitudinális strain csökkent.</li>
             <li><strong>V. cava inferior:</strong> tágult, &lt;50%-os collapsus szimatolásra (sniff) — emelkedett jobb pitvari nyomást tükröz, de nem specifikus constrictióra.</li>
           </ul>
-          <p><strong>Csapda — "annulus paradoxus":</strong> mivel az annulus mozgása fokozott a magas telődési nyomások ellenére, az E/e′ hányados nem használható a bal kamrai telődési nyomás becslésére feltételezett CP esetén.</p>
+          <p><strong>Fontos! – "annulus paradoxus":</strong> mivel az annulus mozgása fokozott a magas telődési nyomások ellenére, az E/e′ hányados nem használható a bal kamrai telődési nyomás becslésére feltételezett constrictio esetén.</p>
 
           <h3>Constrictio vs. restrictio — gyors összehasonlítás</h3>
           <ul>
@@ -1548,23 +1530,6 @@
           </ul>
 
           <h3>Diagnosztikus algoritmus (ESC/EACVI echo algoritmus)</h3>
-          <ol>
-            <li><strong>Szűrés:</strong> mitralis E/A &gt; 0,8 + tágult vena cava inferior?<br>→ Nem: constrictiv/restriktiv fenotípus valószínűtlen.<br>→ Igen: folytatás.</li>
-            <li><strong>Septum mozgás:</strong> kóros, légzésfüggő septum elmozdulás (belégzés → fokozott jobb kamrai telődés → septum "bounce" a bal kamra felé)?<br>→ Nem: további képalkotás (CT/kateterezés), ha a constrictio gyanúja továbbra is fennáll.<br>→ Igen: folytatás.</li>
-            <li><strong>Medialis (septalis) e′:</strong>
-              <ul>
-                <li>&gt; 8 cm/s → <strong>Constrictiv pericarditis</strong></li>
-                <li>6–8 cm/s → <strong>Kevert constrictio/restrictio</strong></li>
-                <li>&lt; 6 cm/s → <strong>Restriktiv cardiomyopathia</strong></li>
-              </ul>
-            </li>
-            <li>Kevert kép, vagy ha a gyanú továbbra is fennáll:
-              <ul>
-                <li>Annulus reversus (lateralis e′ &lt; medialis e′) → constrictiv pericarditis</li>
-                <li>Vena hepatica kilégzési, end-diasztolés reverz/antegrád áramlásának aránya ≥ 0,8 → constrictiv pericarditis</li>
-              </ul>
-            </li>
-          </ol>
           ${cpAlgorithmFigure("hu")}
           <p><strong>További, alátámasztó jelek</strong> (ha a gyanú továbbra is fennáll): DT &lt; 150 ms, IVRT &lt; 50 ms, pulmonalis vénás szisztolés frakció &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
           <p>Ha egy átfogó TTE vizsgálat diagnosztikus constrictióra, további vizsgálat általában nem szükséges; a szívkatéterezés a nem egyértelmű vagy ellentmondó esetek számára van fenntartva.</p>
@@ -1574,7 +1539,7 @@
 
           <h3>Buktatók</h3>
           <ul>
-            <li>A COPD utánozhatja a CP légzésfüggő beáramlási variabilitását, de alacsonyabb E/A hányadossal, hosszabb decelerációs idővel és kifejezett belégzési előremenő áramlással jár a vena cava superiorban (ami CP-ben hiányzik).</li>
+            <li>A COPD utánozhatja a constrictio légzésfüggő beáramlási variabilitását, de alacsonyabb E/A hányadossal, hosszabb decelerációs idővel és kifejezett belégzési előremenő áramlással jár a vena cava superiorban (ami constrictióban hiányzik).</li>
             <li>Pitvarfibrillációban a mitralis beáramlás variabilitása nem megbízható — ilyenkor a medialis e′-re és a vena hepatica jelekre érdemes támaszkodni.</li>
             <li>A normális pericardialis vastagság képalkotáson nem zárja ki a constrictiót.</li>
           </ul>
