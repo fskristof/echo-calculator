@@ -607,6 +607,15 @@
   }
   .wiki-topic-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .wiki-topic-item svg { width: 18px; height: 18px; color: var(--text-sub); flex-shrink: 0; }
+  .wiki-cat {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-sub);
+    margin: 18px 0 8px 4px;
+  }
+  .wiki-topic-list > .wiki-cat:first-child { margin-top: 0; }
   .wiki-empty {
     color: var(--text-sub);
     font-size: 14px;
@@ -624,6 +633,7 @@
   .wiki-body ol { margin: 0 0 14px; padding-left: 20px; }
   .wiki-body ol > li { margin-bottom: 10px; }
   .wiki-body ol ul { margin-top: 6px; margin-bottom: 0; }
+  .wiki-body .info-table-wrap { margin: 4px 0 18px; }
   .wiki-figure {
     margin: 4px 0 18px;
     padding: 12px 8px;
@@ -657,6 +667,26 @@
   .anatomy-figure .lbl.title { font-size: 13px; }
   .anatomy-figure .lbl.chamber { font-size: 12px; }
   .anatomy-figure .lbl.small { font-size: 10.5px; white-space: normal; }
+  .wiki-sources {
+    margin-top: 22px;
+    padding-top: 14px;
+    border-top: 1px solid var(--divider);
+  }
+  .wiki-sources h3 { font-size: 14px; margin: 0 0 8px; color: var(--text-sub); }
+  .wiki-sources ul { margin: 0 0 10px; padding-left: 18px; }
+  .wiki-sources li { font-size: 13px; line-height: 1.5; color: var(--text-sub); margin-bottom: 5px; }
+  .wiki-reviewed, .wiki-disclaimer { font-size: 12px; color: var(--text-sub); margin: 0 0 4px; }
+  .wiki-disclaimer { font-style: italic; }
+  .wiki-callout {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    background: var(--grade-moderate-bg);
+    color: var(--grade-moderate-text);
+    border-radius: 10px;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  .wiki-callout a { color: inherit; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -920,7 +950,7 @@
   <footer class="note">Reproduction built from the app's own source (calculatorUtils.js). Not for diagnostic use.</footer>
 </div>
 
-<div class="info-overlay" id="infoOverlay" hidden>
+<div class="info-overlay" id="infoOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="infoTitle">
   <div class="info-panel">
     <div class="info-bar">
       <h2 id="infoTitle"></h2>
@@ -932,7 +962,7 @@
   </div>
 </div>
 
-<div class="info-overlay" id="wikiOverlay" hidden>
+<div class="info-overlay" id="wikiOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="wikiTitle">
   <div class="info-panel">
     <div class="info-bar">
       <button class="info-close" type="button" id="wikiBack" aria-label="Back">
@@ -1266,8 +1296,16 @@
   };
 
   const uiStrings = {
-    en: { notes: "Notes", close: "Close", back: "Back" },
-    hu: { notes: "Megjegyzések", close: "Bezárás", back: "Vissza" },
+    en: {
+      notes: "Notes", close: "Close", back: "Back",
+      sources: "Sources", reviewed: "Last reviewed",
+      disclaimer: "Reference summary — not a substitute for clinical judgement or current guidelines.",
+    },
+    hu: {
+      notes: "Megjegyzések", close: "Bezárás", back: "Vissza",
+      sources: "Források", reviewed: "Utoljára ellenőrizve",
+      disclaimer: "Referencia-összefoglaló — nem helyettesíti a klinikai megítélést vagy az aktuális irányelveket.",
+    },
   };
   const infoAriaLabels = {
     en: {
@@ -1285,16 +1323,20 @@
   };
   let currentInfoTopic = null;
 
-  function renderInfo(topicKey) {
-    const info = severityInfo[state.language][topicKey];
-    if (!info) return;
-    $("#infoTitle").textContent = info.title;
+  // Builds the severity-table markup. Shared by the info overlay
+  // (severityInfo) and wiki bodies, so a table written in a wiki topic
+  // looks identical to the ones behind the calculator's ⓘ buttons —
+  // .info-table-wrap / .info-table are global CSS, not scoped to the info
+  // overlay, so this is safe to reuse anywhere in .wiki-body too.
+  // spec: { headers[], rows[], colWidths?, wide? }
+  // A row cell may be a plain string, or { text, span } for a colspan.
+  function buildSeverityTable(spec) {
     const colClasses = ["", "col-mild", "col-moderate", "col-severe", "col-massive", "col-torrential"];
-    const theadCells = info.headers.map((h, i) => {
+    const theadCells = spec.headers.map((h, i) => {
       const cls = colClasses[i] || "";
       return `<th${cls ? ` class="${cls}"` : ""}>${h}</th>`;
     }).join("");
-    const bodyRows = info.rows.map(r => {
+    const bodyRows = spec.rows.map(r => {
       const [label, ...cells] = r;
       const tds = cells.map(c => {
         if (c && typeof c === "object") return `<td colspan="${c.span}">${c.text}</td>`;
@@ -1302,38 +1344,62 @@
       }).join("");
       return `<tr><th scope="row">${label}</th>${tds}</tr>`;
     }).join("");
-    const colgroup = info.colWidths
-      ? `<colgroup>${info.colWidths.map(w => `<col style="width:${w}">`).join("")}</colgroup>`
+    const colgroup = spec.colWidths
+      ? `<colgroup>${spec.colWidths.map(w => `<col style="width:${w}">`).join("")}</colgroup>`
       : "";
     // A fixed-layout table with width:auto still expands columns to fit
     // unbreakable content in some browsers, ignoring the colgroup — so the
     // table width has to be pinned explicitly to the sum of the columns.
-    const tableWidthPx = info.colWidths
-      ? info.colWidths.reduce((sum, w) => sum + parseFloat(w), 0)
+    const tableWidthPx = spec.colWidths
+      ? spec.colWidths.reduce((sum, w) => sum + parseFloat(w), 0)
       : null;
-    const notesHtml = info.notes && info.notes.length
-      ? `<div class="info-notes"><h3>${uiStrings[state.language].notes}</h3><ul>${info.notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
-      : "";
-    $("#infoContent").innerHTML = `
+    return `
       <div class="info-table-wrap">
-        <table class="info-table${info.wide ? " wide" : ""}"${tableWidthPx ? ` style="width:${tableWidthPx}px"` : ""}>
+        <table class="info-table${spec.wide ? " wide" : ""}"${tableWidthPx ? ` style="width:${tableWidthPx}px"` : ""}>
           ${colgroup}
           <thead><tr>${theadCells}</tr></thead>
           <tbody>${bodyRows}</tbody>
         </table>
       </div>
-      ${notesHtml}
     `;
+  }
+
+  function renderInfo(topicKey) {
+    const info = severityInfo[state.language][topicKey];
+    if (!info) return;
+    $("#infoTitle").textContent = info.title;
+    const notesHtml = info.notes && info.notes.length
+      ? `<div class="info-notes"><h3>${uiStrings[state.language].notes}</h3><ul>${info.notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
+      : "";
+    $("#infoContent").innerHTML = buildSeverityTable(info) + notesHtml;
+  }
+
+  // Shared by both full-screen overlays (info + wiki), which are mutually
+  // exclusive in practice — the header controls needed to open one are
+  // covered by the other while it's open, so a single focus-return slot
+  // and body scroll lock is safe to share between them.
+  let overlayReturnFocus = null;
+  function setupOverlay(focusTarget) {
+    overlayReturnFocus = document.activeElement;
+    document.body.style.overflow = "hidden";
+    if (focusTarget) focusTarget.focus();
+  }
+  function teardownOverlay() {
+    document.body.style.overflow = "";
+    if (overlayReturnFocus && document.contains(overlayReturnFocus)) overlayReturnFocus.focus();
+    overlayReturnFocus = null;
   }
 
   function openInfo(topicKey) {
     currentInfoTopic = topicKey;
     renderInfo(topicKey);
     $("#infoOverlay").hidden = false;
+    setupOverlay($("#infoClose"));
   }
   function closeInfo() {
     currentInfoTopic = null;
     $("#infoOverlay").hidden = true;
+    teardownOverlay();
   }
   function refreshInfoLanguage() {
     $$(".info-btn[data-info]").forEach(btn => {
@@ -1345,13 +1411,39 @@
   }
 
   // ---- Echo Wiki ----
-  // Add new topics here as they're written — each needs a stable id, a title,
-  // and a body per language. body is raw HTML (wrapped in .wiki-body), so
-  // <p>, <h3>, <ul>/<li> etc. all work. Topics render in array order.
+  // Add new topics here as they're written — each needs a stable id, a
+  // category (must match a wikiCategories id below), a title, a body per
+  // language, and a sources array. body is raw HTML (wrapped in .wiki-body),
+  // so <p>, <h3>, <ul>/<li>, <ol>, .wiki-figure, .wiki-callout, and
+  // .info-table-wrap/.info-table all work. No <h2>/<h4>. Topics render in
+  // category order (see wikiCategories), then array order within a category.
   //
   // Example entry:
-  // { id: "pisa", title: { en: "The PISA method", hu: "A PISA módszer" },
-  //   body: { en: "<p>...</p>", hu: "<p>...</p>" } }
+  // { id: "pisa", category: "valves", reviewed: "2026-08",
+  //   title: { en: "The PISA method", hu: "A PISA módszer" },
+  //   body: { en: "<p>...</p>", hu: "<p>...</p>" },
+  //   sources: [
+  //     { url: "https://...", label: { en: "...", hu: "..." } },
+  //     { label: { en: "Textbook ref, no URL", hu: "Könyv hivatkozás, URL nélkül" } },
+  //   ] }
+
+  // Wiki categories, in list display order. A topic whose `category` is
+  // missing or unknown falls into the "other" bucket, rendered last.
+  const wikiCategories = [
+    { id: "pericardium",  label: { en: "Pericardium",   hu: "Pericardium" } },
+    { id: "valves",       label: { en: "Valves",        hu: "Billentyűk" } },
+    { id: "myocardium",   label: { en: "Myocardium",    hu: "Myocardium" } },
+    { id: "right-heart",  label: { en: "Right heart",   hu: "Jobb szív" } },
+    { id: "hemodynamics", label: { en: "Haemodynamics", hu: "Hemodinamika" } },
+    { id: "aorta",        label: { en: "Aorta",         hu: "Aorta" } },
+    { id: "other",        label: { en: "Other",         hu: "Egyéb" } },
+  ];
+
+  // SVG id convention: every id inside a figure helper (markers, gradients,
+  // etc.) is prefixed with that figure's own slug, e.g. "cp-arrow" below.
+  // url(#...) references bind to the first DOM match, so an unprefixed id
+  // silently breaks the moment two figures using it are ever on the page
+  // together — namespace it up front rather than discovering that later.
 
   // Inline SVG figure for the CP diagnostic algorithm — themed with the
   // app's own CSS custom properties so it matches light/dark automatically.
@@ -1387,7 +1479,7 @@
       <figure class="wiki-figure">
         <svg viewBox="0 0 380 572" role="img" aria-label="${t.caption}">
           <defs>
-            <marker id="cpArrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <marker id="cp-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="var(--text-sub)"></path>
             </marker>
           </defs>
@@ -1398,10 +1490,10 @@
           <text x="125" y="54" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.step1b}</text>
           <rect x="255" y="16" width="110" height="54" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
           <text x="310" y="47" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.exit1}</text>
-          <line x1="125" y1="70" x2="125" y2="106" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <line x1="125" y1="70" x2="125" y2="106" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
           <rect x="131" y="82" width="26" height="14" fill="var(--bg)"></rect>
           <text x="144" y="93" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.yes}</text>
-          <line x1="235" y1="43" x2="251" y2="43" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <line x1="235" y1="43" x2="251" y2="43" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
           <rect x="232" y="26" width="26" height="14" fill="var(--bg)"></rect>
           <text x="245" y="37" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.no}</text>
 
@@ -1413,10 +1505,10 @@
           <text x="310" y="129" text-anchor="middle" font-size="10" fill="var(--text-sub)">${t.exit2a}</text>
           <text x="310" y="143" text-anchor="middle" font-size="10" fill="var(--text-sub)">${t.exit2b}</text>
           <text x="310" y="157" text-anchor="middle" font-size="10" fill="var(--text-sub)">${t.exit2c}</text>
-          <line x1="125" y1="164" x2="125" y2="200" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <line x1="125" y1="164" x2="125" y2="200" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
           <rect x="131" y="176" width="26" height="14" fill="var(--bg)"></rect>
           <text x="144" y="187" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.yes}</text>
-          <line x1="235" y1="137" x2="251" y2="137" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <line x1="235" y1="137" x2="251" y2="137" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
           <rect x="232" y="120" width="26" height="14" fill="var(--bg)"></rect>
           <text x="245" y="131" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.no}</text>
 
@@ -1424,9 +1516,9 @@
           <rect x="15" y="204" width="220" height="48" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
           <text x="125" y="233" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.step3}</text>
 
-          <line x1="125" y1="252" x2="70" y2="297" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
-          <line x1="125" y1="252" x2="190" y2="297" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
-          <line x1="125" y1="252" x2="310" y2="297" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <line x1="125" y1="252" x2="70" y2="297" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
+          <line x1="125" y1="252" x2="190" y2="297" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
+          <line x1="125" y1="252" x2="310" y2="297" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
           <rect x="76" y="264" width="42" height="14" fill="var(--bg)"></rect>
           <text x="97" y="275" text-anchor="middle" font-size="10.5" fill="var(--text-sub)">&gt; 8 cm/s</text>
           <rect x="136" y="264" width="52" height="14" fill="var(--bg)"></rect>
@@ -1442,16 +1534,16 @@
           <text x="310" y="326" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--grade-severe-text)">${t.pillRestr}</text>
 
           <!-- Step 4: only reached from the Mixed pill -->
-          <line x1="190" y1="344" x2="190" y2="396" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <line x1="190" y1="344" x2="190" y2="396" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
           <rect x="40" y="400" width="300" height="76" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
           <text x="190" y="418" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text-main)">${t.step4a}</text>
           <text x="190" y="432" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text-main)">${t.step4b}</text>
           <text x="190" y="446" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text-main)">${t.step4c}</text>
 
-          <line x1="160" y1="476" x2="115" y2="498" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <line x1="160" y1="476" x2="115" y2="498" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
           <rect x="104" y="482" width="26" height="14" fill="var(--bg)"></rect>
           <text x="117" y="493" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.yes}</text>
-          <line x1="220" y1="476" x2="265" y2="498" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <line x1="220" y1="476" x2="265" y2="498" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cp-arrow)"></line>
           <rect x="252" y="482" width="26" height="14" fill="var(--bg)"></rect>
           <text x="265" y="493" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.no}</text>
 
@@ -1508,6 +1600,8 @@
   const wikiTopics = [
     {
       id: "constrictive-pericarditis",
+      category: "pericardium",
+      reviewed: "2026-08",
       title: { en: "Constrictive Pericarditis", hu: "Constrictiv Pericarditis" },
       body: {
         en: `
@@ -1515,7 +1609,8 @@
           <p>A chronically thickened, fibrotic — sometimes calcified — pericardium loses its elasticity and encases the heart like a rigid shell, mechanically limiting diastolic filling. Two hemodynamic hallmarks follow:</p>
           <ul>
             <li>Inspiratory drops in intrathoracic pressure don't transmit fully to the encased LA/LV, so LV filling falls with inspiration.</li>
-            <li>Exaggerated ventricular interdependence: as LV filling falls, RV filling rises reciprocally — the mechanism behind Kussmaul's sign.</li>
+            <li>Exaggerated ventricular interdependence: as LV filling falls, RV filling rises reciprocally — this drives the respirophasic septal shift and the discordant RV/LV systolic pressures.</li>
+            <li>Kussmaul's sign has a separate mechanism: the encased heart is already maximally filled, so it cannot accommodate the extra venous return that inspiration drives forward, and the pressure backs up into the jugular veins. This is why Kussmaul's sign is seen in constriction but not in tamponade.</li>
           </ul>
           <p>Restrictive cardiomyopathy (RCM) produces a similar filling pattern, but from myocardial stiffness rather than pericardial constraint — pericardial compliance is normal, so respiratory pressure changes transmit normally. Telling the two apart matters: constriction is often surgically curable (pericardiectomy).</p>
 
@@ -1523,21 +1618,21 @@
           ${ventInterdependenceFigure("en")}
           <ul>
             <li><strong>2D/M-mode:</strong> septal bounce — an abrupt early-diastolic shift of the septum toward the LV, following the respiratory cycle (most pronounced on the first beat of inspiration); septal "shudder". Normal pericardial thickness on echo does <em>not</em> exclude constriction — TTE is unreliable for thickness; TEE, CT or MRI are better suited for that.</li>
-            <li><strong>Mitral inflow:</strong> E/A &gt; 1.6, deceleration time usually &lt; 160 ms, peak E velocity falls &gt; 15–25% on the first beat of inspiration (variation is absent in up to a third of patients with constriction, and unreliable in AF).</li>
+            <li><strong>Mitral inflow:</strong> E/A &gt; 1.6 in expiration with a deceleration time usually &lt; 160 ms — the established restrictive filling pattern. (The algorithm below enters at the more permissive E/A &gt; 0.8: that is a deliberately sensitive screening threshold, not a description of established constriction.) Peak E velocity falls &ge; 25% on the first beat of inspiration — the Mayo criterion; a looser &gt; 15% is sometimes used, at the cost of specificity. The variation is absent in up to a third of patients with constriction, and unreliable in AF.</li>
             <li><strong>Tricuspid inflow:</strong> peak E velocity rises &gt; 40% with inspiration, reciprocal to the mitral change.</li>
             <li><strong>Hepatic veins:</strong> prominent diastolic flow reversal in expiration — stays reliable even in AF.</li>
             <li><strong>Tissue Doppler (medial e′):</strong> preserved or high (≥ 8–9 cm/s) despite elevated filling pressures — the opposite of restriction. "Annulus reversus": medial e′ ≥ lateral e′, seen in up to 75% of surgically proven constriction.</li>
-            <li><strong>Strain:</strong> longitudinal strain preserved, circumferential strain impaired — the reverse pattern from RCM, where longitudinal strain is reduced.</li>
+            <li><strong>Strain:</strong> longitudinal strain preserved, circumferential strain impaired — the reverse pattern from RCM, where longitudinal strain is reduced. Regionally the gradient flips too: the adherent pericardium tethers the lateral wall, so lateral longitudinal strain drops while septal strain stays preserved.</li>
             <li><strong>IVC:</strong> dilated, &lt;50% collapse with sniff — reflects elevated RA pressure but isn't specific to constriction.</li>
           </ul>
-          <p><strong>Important! – "annulus reversus":</strong> because annular motion is exaggerated despite high filling pressures, E/e′ should not be used to estimate LV filling pressure in suspected constriction.</p>
+          <p class="wiki-callout"><strong>Important! – "annulus reversus":</strong> because annular motion is exaggerated despite high filling pressures, E/e′ should not be used to estimate LV filling pressure in suspected constriction.</p>
 
           <h3>Constriction vs. restriction — quick comparison</h3>
           <ul>
             <li><strong>Septum:</strong> constriction → respirophasic shift; restriction → absent.</li>
             <li><strong>Medial e′:</strong> constriction → preserved/high (≥8–9 cm/s); restriction → globally reduced.</li>
             <li><strong>Annulus reversus (medial e′ ≥ lateral e′):</strong> constriction → often present; restriction → absent.</li>
-            <li><strong>Mitral inflow respiratory variation:</strong> constriction → &gt;15% fall on inspiration; restriction → minimal.</li>
+            <li><strong>Mitral inflow respiratory variation:</strong> constriction → &ge;25% fall on inspiration (&gt;15% is the looser threshold); restriction → minimal.</li>
             <li><strong>Hepatic vein expiratory diastolic reversal:</strong> constriction → prominent; restriction → minimal.</li>
             <li><strong>Longitudinal strain:</strong> constriction → preserved; restriction → reduced.</li>
             <li><strong>RV/LV systolic pressure with inspiration:</strong> constriction → discordant (opposite directions); restriction → concordant (same direction).</li>
@@ -1557,15 +1652,14 @@
             <li>Atrial fibrillation makes mitral inflow variation unreliable — lean on medial e′ and hepatic vein findings instead.</li>
             <li>Normal pericardial thickness on imaging does not exclude constriction.</li>
           </ul>
-
-          <p><strong>Sources:</strong> <a href="https://www.cardioserv.net/constrictive-pericarditis-vs-restrictive-cardiomyopathy-echo-findings/" target="_blank" rel="noopener">Cardioserv — Constrictive Pericarditis vs Restrictive Cardiomyopathy</a>; <a href="https://www.escardio.org/communities/councils/cardiology-practice/scientific-documents-and-publications/ejournal/volume-15/Constrictive-pericarditis-role-of-echocardiography-and-magnetic-resonance-imaging/" target="_blank" rel="noopener">ESC e-Journal — Constrictive pericarditis: role of echocardiography and MRI</a>; EACVI Imaging Summer School, Graz 2026 (slide reference).</p>
         `,
         hu: `
           <h3>Definíció és patofiziológia</h3>
           <p>A krónikusan megvastagodott, fibrotikus — néha meszes — pericardium elveszti rugalmasságát, és merev héjként veszi körül a szívet, mechanikusan korlátozva a diasztolés telődést. Ebből két hemodinamikai jellegzetesség következik:</p>
           <ul>
             <li>A belégzés során csökkenő intrathoracalis nyomás nem terjed át teljesen a körülzárt bal pitvarra/kamrára, ezért a bal kamrai telődés belégzéskor csökken.</li>
-            <li>Fokozott kamrai interdependencia: ahogy a bal kamrai telődés csökken, a jobb kamrai telődés reciprok módon nő — ez áll a Kussmaul-jel hátterében.</li>
+            <li>Fokozott kamrai interdependencia: ahogy a bal kamrai telődés csökken, a jobb kamrai telődés reciprok módon nő — ez áll a légzésfüggő septum-elmozdulás és a diszkordáns jobb/bal kamrai szisztolés nyomások hátterében.</li>
+            <li>A Kussmaul-jel mechanizmusa ettől eltér: a körülzárt szív már maximálisan telt, ezért nem tudja befogadni a belégzés által előrehajtott többlet vénás visszaáramlást, így a nyomás a jugularis vénákra tevődik át. Ezért látunk Kussmaul-jelet constrictióban, de tamponádban nem.</li>
           </ul>
           <p>A restriktív cardiomyopathia (RCM) hasonló telődési mintázatot okoz, de a myocardium merevsége, nem a pericardialis korlátozás miatt — a pericardialis compliance normális, így a légzési nyomásváltozások normálisan terjednek át. A kettő elkülönítése azért fontos, mert a constrictio gyakran sebészileg (pericardectomiával) gyógyítható.</p>
 
@@ -1573,21 +1667,21 @@
           ${ventInterdependenceFigure("hu")}
           <ul>
             <li><strong>2D/M-mode:</strong> septum "bounce" — a septum hirtelen, korai diasztolés elmozdulása a bal kamra felé, a légzési ciklust követve (a belégzés első ütésében a legkifejezettebb); septalis "shudder". A normális pericardialis vastagság echoval <em>nem</em> zárja ki a constrictiót — a TTE megbízhatatlan a vastagság megítélésében, erre a TEE, CT vagy MRI alkalmasabb.</li>
-            <li><strong>Mitralis beáramlás:</strong> E/A &gt; 1,6, decelerációs idő általában &lt; 160 ms, a csúcs E sebesség &gt; 15–25%-kal csökken a belégzés első ütésében (a variabilitás a constrictiós betegek akár egyharmadánál hiányzik, és pitvarfibrillációban nem megbízható).</li>
+            <li><strong>Mitralis beáramlás:</strong> E/A &gt; 1,6 kilégzésben, a decelerációs idő általában &lt; 160 ms — ez a kialakult restriktív telődési mintázat. (Az alábbi algoritmus a megengedőbb E/A &gt; 0,8 értéknél lép be: ez szándékosan érzékeny szűrőküszöb, nem a kialakult constrictio leírása.) A csúcs E sebesség &ge; 25%-kal csökken a belégzés első ütésében — ez a Mayo-kritérium; a lazább &gt; 15% is használatos, a specificitás rovására. A variabilitás a constrictiós betegek akár egyharmadánál hiányzik, és pitvarfibrillációban nem megbízható.</li>
             <li><strong>Tricuspidalis beáramlás:</strong> a csúcs E sebesség &gt; 40%-kal nő belégzéskor, reciprok a mitralis változással.</li>
             <li><strong>Vena hepaticák:</strong> kifejezett diasztolés reverz áramlás kilégzéskor — pitvarfibrillációban is megbízható marad.</li>
             <li><strong>Szöveti Doppler (medialis e′):</strong> megtartott vagy magas (≥ 8–9 cm/s) az emelkedett telődési nyomások ellenére — ez az ellenkezője a restrictiónak. "Annulus reversus": medialis e′ ≥ lateralis e′, a sebészileg igazolt constrictiós esetek akár 75%-ában megfigyelhető.</li>
-            <li><strong>Strain:</strong> a longitudinális strain megtartott, a circumferentialis strain beszűkült — ez fordított mintázat az RCM-hez képest, ahol a longitudinális strain csökkent.</li>
+            <li><strong>Strain:</strong> a longitudinális strain megtartott, a circumferentialis strain beszűkült — ez fordított mintázat az RCM-hez képest, ahol a longitudinális strain csökkent. Regionálisan is megfordul a gradiens: a letapadt pericardium megköti a lateralis falat, így a lateralis longitudinális strain csökken, miközben a septalis megtartott marad.</li>
             <li><strong>V. cava inferior:</strong> tágult, &lt;50%-os collapsus szimatolásra (sniff) — emelkedett jobb pitvari nyomást tükröz, de nem specifikus constrictióra.</li>
           </ul>
-          <p><strong>Fontos! – "annulus reversus":</strong> mivel az annulus mozgása fokozott a magas telődési nyomások ellenére, az E/e′ hányados nem használható a bal kamrai telődési nyomás becslésére feltételezett constrictio esetén.</p>
+          <p class="wiki-callout"><strong>Fontos! – "annulus reversus":</strong> mivel az annulus mozgása fokozott a magas telődési nyomások ellenére, az E/e′ hányados nem használható a bal kamrai telődési nyomás becslésére feltételezett constrictio esetén.</p>
 
           <h3>Constrictio vs. restrictio — gyors összehasonlítás</h3>
           <ul>
             <li><strong>Septum:</strong> constrictio → légzésfüggő elmozdulás; restrictio → hiányzik.</li>
             <li><strong>Medialis e′:</strong> constrictio → megtartott/magas (≥8–9 cm/s); restrictio → globálisan csökkent.</li>
             <li><strong>Annulus reversus (medialis e′ ≥ lateralis e′):</strong> constrictio → gyakran jelen van; restrictio → hiányzik.</li>
-            <li><strong>Mitralis beáramlás légzési variabilitása:</strong> constrictio → &gt;15%-os csökkenés belégzéskor; restrictio → minimális.</li>
+            <li><strong>Mitralis beáramlás légzési variabilitása:</strong> constrictio → &ge;25%-os csökkenés belégzéskor (&gt;15% a lazább küszöb); restrictio → minimális.</li>
             <li><strong>Vena hepatica kilégzési diasztolés reverz áramlás:</strong> constrictio → kifejezett; restrictio → minimális.</li>
             <li><strong>Longitudinális strain:</strong> constrictio → megtartott; restrictio → csökkent.</li>
             <li><strong>Jobb/bal kamrai szisztolés nyomás belégzéskor:</strong> constrictio → diszkordáns (ellentétes irányú); restrictio → konkordáns (azonos irányú).</li>
@@ -1607,67 +1701,177 @@
             <li>Pitvarfibrillációban a mitralis beáramlás variabilitása nem megbízható — ilyenkor a medialis e′-re és a vena hepatica jelekre érdemes támaszkodni.</li>
             <li>A normális pericardialis vastagság képalkotáson nem zárja ki a constrictiót.</li>
           </ul>
-
-          <p><strong>Források:</strong> <a href="https://www.cardioserv.net/constrictive-pericarditis-vs-restrictive-cardiomyopathy-echo-findings/" target="_blank" rel="noopener">Cardioserv — Constrictive Pericarditis vs Restrictive Cardiomyopathy</a>; <a href="https://www.escardio.org/communities/councils/cardiology-practice/scientific-documents-and-publications/ejournal/volume-15/Constrictive-pericarditis-role-of-echocardiography-and-magnetic-resonance-imaging/" target="_blank" rel="noopener">ESC e-Journal — Constrictive pericarditis: role of echocardiography and MRI</a>; EACVI Imaging Summer School, Graz 2026 (dia hivatkozás).</p>
         `,
       },
+      sources: [
+        {
+          url: "https://www.cardioserv.net/constrictive-pericarditis-vs-restrictive-cardiomyopathy-echo-findings/",
+          label: { en: "Cardioserv — Constrictive Pericarditis vs Restrictive Cardiomyopathy", hu: "Cardioserv — Constrictive Pericarditis vs Restrictive Cardiomyopathy" },
+        },
+        {
+          url: "https://www.escardio.org/communities/councils/cardiology-practice/scientific-documents-and-publications/ejournal/volume-15/Constrictive-pericarditis-role-of-echocardiography-and-magnetic-resonance-imaging/",
+          label: { en: "ESC e-Journal — Constrictive pericarditis: role of echocardiography and MRI", hu: "ESC e-Journal — Constrictive pericarditis: role of echocardiography and MRI" },
+        },
+        {
+          label: { en: "EACVI Imaging Summer School, Graz 2026 (slide reference)", hu: "EACVI Imaging Summer School, Graz 2026 (dia hivatkozás)" },
+        },
+      ],
     },
   ];
 
+  // Dev guard: a topic's EN and HU bodies should contain the same numbers. A
+  // mismatch almost always means a cutoff was corrected in one language only
+  // — the single largest maintenance risk here, since every cutoff exists
+  // twice, in two long strings, with nothing else to catch a missed pair.
+  // HU decimal commas are normalised to dots first. SVG coordinates appear
+  // in both bodies identically, so they cancel out. Console-only, dev-gated
+  // — never runs for production users.
+  function auditWikiNumbers() {
+    const tokens = (html) => (html
+      .replace(/<[^>]*>/g, " ")
+      .replace(/(\d),(\d)/g, "$1.$2")
+      .match(/\d+(?:\.\d+)?/g) || []).sort().join(" ");
+    wikiTopics.forEach(t => {
+      const en = tokens(t.body.en), hu = tokens(t.body.hu);
+      if (en !== hu) {
+        console.warn(`[wiki] numeric drift in "${t.id}"\n  en: ${en}\n  hu: ${hu}`);
+      }
+    });
+  }
+  if (location.hostname === "localhost" ||
+      location.hostname === "127.0.0.1" ||
+      location.search.includes("audit")) {
+    auditWikiNumbers();
+  }
+
   let currentWikiTopic = null;
+
+  function renderWikiTopicButton(topic) {
+    return `
+      <button class="wiki-topic-item" type="button" data-wiki-topic="${topic.id}">
+        <span>${topic.title[state.language]}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
+      </button>
+    `;
+  }
 
   function renderWikiList() {
     $("#wikiTitle").textContent = translations[state.language].wikiTitle;
     if (wikiTopics.length === 0) {
       $("#wikiContent").innerHTML = `<div class="wiki-empty">${translations[state.language].wikiEmpty}</div>`;
+      $("#wikiContent").scrollTop = 0;
       return;
     }
+    // Group by category (in wikiCategories order); unknown/missing category
+    // falls into "other". Skip the heading entirely when only one category
+    // is actually populated — a single topic shouldn't sprout a lone header.
+    const byCategory = new Map(wikiCategories.map(c => [c.id, []]));
+    wikiTopics.forEach(topic => {
+      const key = byCategory.has(topic.category) ? topic.category : "other";
+      byCategory.get(key).push(topic);
+    });
+    const populated = wikiCategories.filter(c => byCategory.get(c.id).length > 0);
+    const showHeadings = populated.length > 1;
     $("#wikiContent").innerHTML = `
       <div class="wiki-topic-list">
-        ${wikiTopics.map(topic => `
-          <button class="wiki-topic-item" type="button" data-wiki-topic="${topic.id}">
-            <span>${topic.title[state.language]}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
-          </button>
+        ${populated.map(cat => `
+          ${showHeadings ? `<h3 class="wiki-cat">${cat.label[state.language]}</h3>` : ""}
+          ${byCategory.get(cat.id).map(renderWikiTopicButton).join("")}
         `).join("")}
       </div>
     `;
     $$("[data-wiki-topic]", $("#wikiContent")).forEach(btn => {
       btn.addEventListener("click", () => openWikiTopic(btn.dataset.wikiTopic));
     });
+    $("#wikiContent").scrollTop = 0;
+  }
+
+  function renderWikiSources(topic, lang) {
+    if (!topic.sources || !topic.sources.length) return "";
+    const items = topic.sources.map(s => {
+      const label = s.label[lang];
+      return s.url
+        ? `<li><a href="${s.url}" target="_blank" rel="noopener">${label}</a></li>`
+        : `<li>${label}</li>`;
+    }).join("");
+    const reviewed = topic.reviewed
+      ? `<p class="wiki-reviewed">${uiStrings[lang].reviewed}: ${topic.reviewed}</p>`
+      : "";
+    return `
+      <div class="wiki-sources">
+        <h3>${uiStrings[lang].sources}</h3>
+        <ul>${items}</ul>
+        ${reviewed}
+        <p class="wiki-disclaimer">${uiStrings[lang].disclaimer}</p>
+      </div>`;
   }
 
   function renderWikiTopic(id) {
     const topic = wikiTopics.find(t => t.id === id);
     if (!topic) { renderWikiList(); return; }
     $("#wikiTitle").textContent = topic.title[state.language];
-    $("#wikiContent").innerHTML = `<div class="wiki-body">${topic.body[state.language]}</div>`;
+    $("#wikiContent").innerHTML =
+      `<div class="wiki-body">${topic.body[state.language]}${renderWikiSources(topic, state.language)}</div>`;
+    $("#wikiContent").scrollTop = 0;
   }
 
-  function openWiki() {
-    currentWikiTopic = null;
-    renderWikiList();
-    $("#wikiOverlay").hidden = false;
+  // ---- wiki routing ----
+  // #wiki = topic list, #wiki/<id> = topic, no hash = closed. All view
+  // changes go through the URL so the phone/browser back gesture steps
+  // topic -> list -> closed instead of leaving the PWA entirely.
+  // history.state.wikiDepth tracks how many entries we've pushed, so the
+  // in-app back button can use a real history.back() when there's
+  // something of ours to go back to, and fall back to replaceState when
+  // the user arrived on a deep link (no "list" entry beneath them yet).
+  function parseWikiHash() {
+    const h = location.hash;
+    if (h === "#wiki") return { open: true, topic: null };
+    const m = /^#wiki\/(.+)$/.exec(h);
+    if (m && wikiTopics.some(t => t.id === decodeURIComponent(m[1]))) {
+      return { open: true, topic: decodeURIComponent(m[1]) };
+    }
+    return { open: false, topic: null };
   }
-  function openWikiTopic(id) {
-    currentWikiTopic = id;
-    renderWikiTopic(id);
+
+  // Single source of truth: render whatever the current URL says.
+  function syncWikiToHash() {
+    const route = parseWikiHash();
+    const overlay = $("#wikiOverlay");
+    if (!route.open) {
+      if (!overlay.hidden) teardownOverlay();
+      currentWikiTopic = null;
+      overlay.hidden = true;
+      return;
+    }
+    const wasHidden = overlay.hidden;
+    currentWikiTopic = route.topic;
+    if (route.topic) renderWikiTopic(route.topic); else renderWikiList();
+    overlay.hidden = false;
+    if (wasHidden) setupOverlay($("#wikiBack"));
   }
+
+  function goWiki(hash, { replace = false } = {}) {
+    const depth = (history.state && history.state.wikiDepth) || 0;
+    const url = hash || location.pathname + location.search;
+    const nextState = { wikiDepth: replace ? depth : depth + 1 };
+    if (replace) history.replaceState(nextState, "", url);
+    else history.pushState(nextState, "", url);
+    syncWikiToHash();
+  }
+
+  function openWiki()        { goWiki("#wiki"); }
+  function openWikiTopic(id) { goWiki(`#wiki/${encodeURIComponent(id)}`); }
+  // The back button is always visible (list page included). From a topic
+  // it goes back to the list; from the list itself there's nowhere
+  // further "back" to go, so it just closes the wiki — same as the X.
   function backToWikiList() {
-    currentWikiTopic = null;
-    renderWikiList();
+    if ((history.state && history.state.wikiDepth) > 1) history.back();
+    else goWiki("#wiki", { replace: true });
   }
-  function closeWiki() {
-    currentWikiTopic = null;
-    $("#wikiOverlay").hidden = true;
-  }
-  // The back button is always visible now (list page included). From a topic
-  // it goes back to the list; from the list itself there's nowhere further
-  // "back" to go, so it just closes the wiki — same as the X button.
-  function handleWikiBack() {
-    if (currentWikiTopic) backToWikiList();
-    else closeWiki();
-  }
+  function closeWiki()      { goWiki(null); }
+  function handleWikiBack() { currentWikiTopic ? backToWikiList() : closeWiki(); }
+
+  window.addEventListener("popstate", syncWikiToHash);
   function refreshWikiLanguage() {
     $("#wikiBack").setAttribute("aria-label", uiStrings[state.language].back);
     $("#wikiClose").setAttribute("aria-label", uiStrings[state.language].close);
@@ -1799,7 +2003,9 @@
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (!$("#infoOverlay").hidden) closeInfo();
-    if (!$("#wikiOverlay").hidden) closeWiki();
+    // Escape steps back (topic -> list -> closed), same as the on-screen
+    // back button, instead of closing the wiki outright from a topic.
+    if (!$("#wikiOverlay").hidden) handleWikiBack();
   });
 
   $("#clearBtn").addEventListener("click", () => {
@@ -2016,6 +2222,9 @@
   computeResults();
   refreshInfoLanguage();
   refreshWikiLanguage();
+  // Cold load on a #wiki or #wiki/<id> URL should open straight to that
+  // view instead of requiring the wiki button to be clicked first.
+  syncWikiToHash();
 })();
 
 if ('serviceWorker' in navigator) {
