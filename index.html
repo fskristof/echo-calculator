@@ -639,6 +639,24 @@
     text-align: center;
     line-height: 1.4;
   }
+  /* Photo figure with HTML text overlaid on a raster image by percentage
+     position — the image itself has a fixed cream background (not theme-
+     reactive), so label text uses a fixed dark color rather than
+     var(--text-main), which would turn white and vanish in dark mode. */
+  .anatomy-figure { position: relative; }
+  .anatomy-figure img { display: block; width: 100%; height: auto; border-radius: 6px; }
+  .anatomy-figure .lbl {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    color: #241b0f;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .anatomy-figure .lbl.title { font-size: 13px; }
+  .anatomy-figure .lbl.chamber { font-size: 12px; }
+  .anatomy-figure .lbl.small { font-size: 10.5px; white-space: normal; }
 </style>
 </head>
 <body>
@@ -1447,6 +1465,46 @@
     `;
   }
 
+  // Photo figure: ventricular interdependence across the respiratory cycle.
+  // The source image (constriction-diagram.png) has had its original Spanish
+  // labels erased; the labels here are real HTML text overlaid by percentage
+  // position, so they stay crisp and swap with the language toggle instead
+  // of being baked into the image.
+  function ventInterdependenceFigure(lang) {
+    const t = lang === "hu"
+      ? {
+        caption: "Kamrai interdependencia apnoéban, belégzésben és kilégzésben — a belégzés fokozza a jobb kamrai, a kilégzés a bal kamrai telődést.",
+        source: "Forrás",
+        apnea: "Apnoe", insp: "Belégzés", exp: "Kilégzés",
+        rv: "JK", lv: "BK",
+        ivc1: "Vena cava", ivc2: "inferior",
+        pv: "Pulmonalis vénák",
+      }
+      : {
+        caption: "Ventricular interdependence across apnea, inspiration, and expiration — inspiration boosts RV filling, expiration boosts LV filling.",
+        source: "Source",
+        apnea: "Apnea", insp: "Inspiration", exp: "Expiration",
+        rv: "RV", lv: "LV",
+        ivc1: "Inferior", ivc2: "vena cava",
+        pv: "Pulmonary veins",
+      };
+    return `
+      <figure class="wiki-figure">
+        <div class="anatomy-figure">
+          <img src="./constriction-diagram.png" alt="${t.caption}" loading="lazy">
+          <span class="lbl title" style="left:18.9%;top:7.5%;">${t.apnea}</span>
+          <span class="lbl title" style="left:50.6%;top:7.5%;">${t.insp}</span>
+          <span class="lbl title" style="left:82.0%;top:7.5%;">${t.exp}</span>
+          <span class="lbl chamber" style="left:12.6%;top:32.8%;">${t.rv}</span>
+          <span class="lbl chamber" style="left:21.9%;top:29.1%;">${t.lv}</span>
+          <span class="lbl small" style="left:8.5%;top:92.4%;">${t.ivc1}<br>${t.ivc2}</span>
+          <span class="lbl small" style="left:32.7%;top:96.8%;">${t.pv}</span>
+        </div>
+        <figcaption>${t.caption}<br>${t.source}: <a href="https://doi.org/10.1016/S0304-5412(13)70664-4" target="_blank" rel="noopener">doi.org/10.1016/S0304-5412(13)70664-4</a></figcaption>
+      </figure>
+    `;
+  }
+
   const wikiTopics = [
     {
       id: "constrictive-pericarditis",
@@ -1462,6 +1520,7 @@
           <p>Restrictive cardiomyopathy (RCM) produces a similar filling pattern, but from myocardial stiffness rather than pericardial constraint — pericardial compliance is normal, so respiratory pressure changes transmit normally. Telling the two apart matters: constriction is often surgically curable (pericardiectomy).</p>
 
           <h3>Echocardiographic findings in constriction</h3>
+          ${ventInterdependenceFigure("en")}
           <ul>
             <li><strong>2D/M-mode:</strong> septal bounce — an abrupt early-diastolic shift of the septum toward the LV, following the respiratory cycle (most pronounced on the first beat of inspiration); septal "shudder". Normal pericardial thickness on echo does <em>not</em> exclude constriction — TTE is unreliable for thickness; TEE, CT or MRI are better suited for that.</li>
             <li><strong>Mitral inflow:</strong> E/A &gt; 1.6, deceleration time usually &lt; 160 ms, peak E velocity falls &gt; 15–25% on the first beat of inspiration (variation is absent in up to a third of patients with constriction, and unreliable in AF).</li>
@@ -1511,6 +1570,7 @@
           <p>A restriktív cardiomyopathia (RCM) hasonló telődési mintázatot okoz, de a myocardium merevsége, nem a pericardialis korlátozás miatt — a pericardialis compliance normális, így a légzési nyomásváltozások normálisan terjednek át. A kettő elkülönítése azért fontos, mert a constrictio gyakran sebészileg (pericardectomiával) gyógyítható.</p>
 
           <h3>Echokardiográfiás jelek constrictióban</h3>
+          ${ventInterdependenceFigure("hu")}
           <ul>
             <li><strong>2D/M-mode:</strong> septum "bounce" — a septum hirtelen, korai diasztolés elmozdulása a bal kamra felé, a légzési ciklust követve (a belégzés első ütésében a legkifejezettebb); septalis "shudder". A normális pericardialis vastagság echoval <em>nem</em> zárja ki a constrictiót — a TTE megbízhatatlan a vastagság megítélésében, erre a TEE, CT vagy MRI alkalmasabb.</li>
             <li><strong>Mitralis beáramlás:</strong> E/A &gt; 1,6, decelerációs idő általában &lt; 160 ms, a csúcs E sebesség &gt; 15–25%-kal csökken a belégzés első ütésében (a variabilitás a constrictiós betegek akár egyharmadánál hiányzik, és pitvarfibrillációban nem megbízható).</li>
