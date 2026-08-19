@@ -1344,10 +1344,11 @@
         step1a: "Mitralis E/A > 0,8", step1b: "+ tágult VCI?",
         exit1: "Valószínűtlen",
         step2a: "Kóros légzésfüggő", step2b: "septum elmozdulás?",
-        exit2a: "További képalkotás", exit2b: "(CT / kateterezés)",
+        exit2a: "További képalkotás", exit2b: "ha a gyanú fennáll", exit2c: "(CT / kateterezés)",
         step3: "Medialis e′ (septalis)",
         pillCP: "Constrictio", pillMixed: "Kevert", pillRestr: "Restrictio",
-        step4a: "Annulus reversus, vagy vena hepatica", step4b: "diasztolés reverz áramlás ≥ 0,8?",
+        step4a: "Annulus reversus, vagy vena hepatica", step4b: "diasztolés reverz áramlás (kilégzési",
+        step4c: "retrográd/antegrád arány ≥ 0,8)?",
         finalCP: "Constrictio", finalMixed: "Kevert",
         yes: "igen", no: "nem",
       }
@@ -1356,16 +1357,17 @@
         step1a: "Mitral E/A > 0.8", step1b: "+ dilated IVC?",
         exit1: "Unlikely",
         step2a: "Abnormal respirophasic", step2b: "septal shift?",
-        exit2a: "Further imaging", exit2b: "(CT / catheterization)",
+        exit2a: "Further imaging", exit2b: "if still suspected", exit2c: "(CT / catheterization)",
         step3: "Medial e′ (septal)",
         pillCP: "Constriction", pillMixed: "Mixed", pillRestr: "RCM",
-        step4a: "Annulus reversus, or hepatic vein", step4b: "diastolic reversal ≥ 0.8?",
+        step4a: "Annulus reversus, or hepatic vein", step4b: "diastolic reversal (expiratory",
+        step4c: "retrograde/antegrade flow ≥ 0.8)?",
         finalCP: "Constriction", finalMixed: "Mixed",
         yes: "yes", no: "no",
       };
     return `
       <figure class="wiki-figure">
-        <svg viewBox="0 0 380 560" role="img" aria-label="${t.caption}">
+        <svg viewBox="0 0 380 572" role="img" aria-label="${t.caption}">
           <defs>
             <marker id="cpArrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="var(--text-sub)"></path>
@@ -1389,9 +1391,10 @@
           <rect x="15" y="110" width="220" height="54" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
           <text x="125" y="132" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.step2a}</text>
           <text x="125" y="148" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.step2b}</text>
-          <rect x="255" y="110" width="110" height="54" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
-          <text x="310" y="132" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.exit2a}</text>
-          <text x="310" y="148" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.exit2b}</text>
+          <rect x="255" y="110" width="110" height="64" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+          <text x="310" y="129" text-anchor="middle" font-size="10" fill="var(--text-sub)">${t.exit2a}</text>
+          <text x="310" y="143" text-anchor="middle" font-size="10" fill="var(--text-sub)">${t.exit2b}</text>
+          <text x="310" y="157" text-anchor="middle" font-size="10" fill="var(--text-sub)">${t.exit2c}</text>
           <line x1="125" y1="164" x2="125" y2="200" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
           <rect x="131" y="176" width="26" height="14" fill="var(--bg)"></rect>
           <text x="144" y="187" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.yes}</text>
@@ -1422,21 +1425,22 @@
 
           <!-- Step 4: only reached from the Mixed pill -->
           <line x1="190" y1="344" x2="190" y2="396" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
-          <rect x="40" y="400" width="300" height="64" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
-          <text x="190" y="424" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.step4a}</text>
-          <text x="190" y="440" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.step4b}</text>
+          <rect x="40" y="400" width="300" height="76" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+          <text x="190" y="418" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text-main)">${t.step4a}</text>
+          <text x="190" y="432" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text-main)">${t.step4b}</text>
+          <text x="190" y="446" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text-main)">${t.step4c}</text>
 
-          <line x1="160" y1="464" x2="115" y2="486" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
-          <rect x="104" y="470" width="26" height="14" fill="var(--bg)"></rect>
-          <text x="117" y="481" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.yes}</text>
-          <line x1="220" y1="464" x2="265" y2="486" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
-          <rect x="252" y="470" width="26" height="14" fill="var(--bg)"></rect>
-          <text x="265" y="481" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.no}</text>
+          <line x1="160" y1="476" x2="115" y2="498" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <rect x="104" y="482" width="26" height="14" fill="var(--bg)"></rect>
+          <text x="117" y="493" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.yes}</text>
+          <line x1="220" y1="476" x2="265" y2="498" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#cpArrow)"></line>
+          <rect x="252" y="482" width="26" height="14" fill="var(--bg)"></rect>
+          <text x="265" y="493" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.no}</text>
 
-          <rect x="60" y="490" width="110" height="44" rx="10" fill="var(--grade-mild-bg)"></rect>
-          <text x="115" y="517" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--grade-mild-text)">${t.finalCP}</text>
-          <rect x="210" y="490" width="110" height="44" rx="10" fill="var(--grade-moderate-bg)"></rect>
-          <text x="265" y="517" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--grade-moderate-text)">${t.finalMixed}</text>
+          <rect x="60" y="502" width="110" height="44" rx="10" fill="var(--grade-mild-bg)"></rect>
+          <text x="115" y="529" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--grade-mild-text)">${t.finalCP}</text>
+          <rect x="210" y="502" width="110" height="44" rx="10" fill="var(--grade-moderate-bg)"></rect>
+          <text x="265" y="529" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--grade-moderate-text)">${t.finalMixed}</text>
         </svg>
         <figcaption>${t.caption}</figcaption>
       </figure>
@@ -1467,7 +1471,7 @@
             <li><strong>Strain:</strong> longitudinal strain preserved, circumferential strain impaired — the reverse pattern from RCM, where longitudinal strain is reduced.</li>
             <li><strong>IVC:</strong> dilated, &lt;50% collapse with sniff — reflects elevated RA pressure but isn't specific to constriction.</li>
           </ul>
-          <p><strong>Important! – "annulus paradoxus":</strong> because annular motion is exaggerated despite high filling pressures, E/e′ should not be used to estimate LV filling pressure in suspected constriction.</p>
+          <p><strong>Important! – "annulus reversus":</strong> because annular motion is exaggerated despite high filling pressures, E/e′ should not be used to estimate LV filling pressure in suspected constriction.</p>
 
           <h3>Constriction vs. restriction — quick comparison</h3>
           <ul>
@@ -1482,7 +1486,7 @@
 
           <h3>Diagnostic algorithm (ESC/EACVI echo algorithm)</h3>
           ${cpAlgorithmFigure("en")}
-          <p><strong>Additional supportive findings</strong> (when suspicion persists): DT &lt; 150 ms, IVRT &lt; 50 ms, PV systolic fraction &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
+          <p><strong>Findings favoring restriction</strong> (when suspicion of a restrictive component persists): DT &lt; 150 ms, IVRT &lt; 50 ms, PV systolic fraction &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
           <p>When a comprehensive TTE study is diagnostic for constriction, no further testing is usually necessary; cardiac catheterization is reserved for inconclusive or discordant cases.</p>
 
           <h3>Common causes</h3>
@@ -1516,7 +1520,7 @@
             <li><strong>Strain:</strong> a longitudinális strain megtartott, a circumferentialis strain beszűkült — ez fordított mintázat az RCM-hez képest, ahol a longitudinális strain csökkent.</li>
             <li><strong>V. cava inferior:</strong> tágult, &lt;50%-os collapsus szimatolásra (sniff) — emelkedett jobb pitvari nyomást tükröz, de nem specifikus constrictióra.</li>
           </ul>
-          <p><strong>Fontos! – "annulus paradoxus":</strong> mivel az annulus mozgása fokozott a magas telődési nyomások ellenére, az E/e′ hányados nem használható a bal kamrai telődési nyomás becslésére feltételezett constrictio esetén.</p>
+          <p><strong>Fontos! – "annulus reversus":</strong> mivel az annulus mozgása fokozott a magas telődési nyomások ellenére, az E/e′ hányados nem használható a bal kamrai telődési nyomás becslésére feltételezett constrictio esetén.</p>
 
           <h3>Constrictio vs. restrictio — gyors összehasonlítás</h3>
           <ul>
@@ -1531,7 +1535,7 @@
 
           <h3>Diagnosztikus algoritmus (ESC/EACVI echo algoritmus)</h3>
           ${cpAlgorithmFigure("hu")}
-          <p><strong>További, alátámasztó jelek</strong> (ha a gyanú továbbra is fennáll): DT &lt; 150 ms, IVRT &lt; 50 ms, pulmonalis vénás szisztolés frakció &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
+          <p><strong>Restrictiót valószínűsítő jelek</strong> (ha restriktív komponens gyanúja továbbra is fennáll): DT &lt; 150 ms, IVRT &lt; 50 ms, pulmonalis vénás szisztolés frakció &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
           <p>Ha egy átfogó TTE vizsgálat diagnosztikus constrictióra, további vizsgálat általában nem szükséges; a szívkatéterezés a nem egyértelmű vagy ellentmondó esetek számára van fenntartva.</p>
 
           <h3>Gyakori okok</h3>
