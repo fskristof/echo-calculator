@@ -95,7 +95,6 @@
     background: var(--bg);
     display: flex;
     flex-direction: column;
-    padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
@@ -105,7 +104,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    /* Safe-area inset lives on the sticky header itself (not a scrolled-away
+       ancestor) so its background stays full-bleed under the notch/status bar
+       at every scroll position while the title/buttons stay clear of it. */
+    padding: calc(16px + env(safe-area-inset-top)) 20px 16px;
     background: var(--card);
     border-bottom: 1px solid var(--divider);
     position: sticky;
@@ -330,6 +332,22 @@
     user-select: none;
   }
   .clear-btn:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+
+  .copy-btn {
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    margin: 0 0 8px;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   footer.note {
     text-align: center;
@@ -797,6 +815,7 @@
     </section>
 
     <button class="clear-btn" id="clearBtn" type="button" data-t="clear">Clear All</button>
+    <button class="copy-btn" id="copyBtn" type="button" data-t="copyReport">Copy to Report</button>
   </main>
 
   <footer class="note">Reproduction built from the app's own source (calculatorUtils.js). Not for diagnostic use.</footer>
@@ -834,6 +853,8 @@
       ava: "AVA", avai: "AVAi", dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
       clear: "Clear All", results: "Calculated Results",
       decimalError: "Please use '.' as decimal separator",
+      copyReport: "Copy to clipboard", copied: "Copied to clipboard",
+      copyEmpty: "Nothing to copy yet", copyFailed: "Couldn't copy — select and copy manually",
     },
     hu: {
       title: "Echo Kalkulátor", patientData: "Beteg adatok", weight: "Testsúly", height: "Testmagasság",
@@ -852,6 +873,8 @@
       ava: "AVA", avai: "AVAi", dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
       clear: "Összes törlése", results: "Számított eredmények",
       decimalError: "Kérjük, használja a ',' tizedeselválasztót",
+      copyReport: "Másolás vágólapra", copied: "Vágólapra másolva",
+      copyEmpty: "Nincs még mit másolni", copyFailed: "Sikertelen másolás — másold ki kézzel",
     },
   };
 
@@ -1201,6 +1224,9 @@
 
   // ---- state ----
   const state = { language: "hu", bsaManualMode: false };
+  // Snapshot of the last computeResults() output, kept for the "Copy to Report"
+  // feature so it doesn't need to recompute everything itself.
+  let lastResults = {};
   const fieldNames = [
     "weight","height","bsaManual","heartRate",
     "mrPisaRadius","mrAliasingVelocity","mrVmax","mrVti","mvVtiPw",
@@ -1389,7 +1415,131 @@
       list.appendChild(row);
     });
     $("#resultsCard").hidden = !any;
+
+    lastResults = { bsa, mrEro, mrRegVol, mrRegFraction, arEro, arRegVol, arRegFraction,
+      trEro, trRegVol, sv, svi, cardiacOutput, cardiacIndex, ava, avai, dviVti, dviVmax, mvVtiLvotVti };
   }
+
+  // ---- report text for "Copy to Report" ----
+  // Parses a raw input string and returns it formatted like a calculated
+  // result (localized decimal separator, 2 decimals), or null if empty/invalid.
+  function fmtInput(raw) {
+    const n = parseNumber(raw, state.language);
+    return isNaN(n) ? null : fmt(n);
+  }
+
+  // One PISA line: "<Group>: <label>: <val> <unit>; <label>: <val> <unit>; ..."
+  // in the fixed order radius, ERO, Reg vol, Reg fraction, Vmax, VTI, Aliasing
+  // velocity — regFractionLabel is omitted entirely for TR (not calculated).
+  function pisaLine(t, groupLabel, eroLabel, regVolLabel, regFractionLabel,
+                     radiusRaw, vmaxRaw, vtiRaw, aliasingRaw, eroVal, regVolVal, regFractionVal) {
+    const parts = [];
+    const radius = fmtInput(radiusRaw);
+    if (radius !== null) parts.push(`${t.pisaRadius}: ${radius} mm`);
+    if (eroVal !== null) parts.push(`${eroLabel}: ${fmt(eroVal)} cm²`);
+    if (regVolVal !== null) parts.push(`${regVolLabel}: ${fmt(regVolVal)} ml`);
+    if (regFractionLabel && regFractionVal !== null) parts.push(`${regFractionLabel}: ${fmt(regFractionVal)} %`);
+    const vmax = fmtInput(vmaxRaw);
+    if (vmax !== null) parts.push(`${t.vmax}: ${vmax} m/s`);
+    const vti = fmtInput(vtiRaw);
+    if (vti !== null) parts.push(`${t.vti}: ${vti} cm`);
+    const aliasing = fmtInput(aliasingRaw);
+    if (aliasing !== null) parts.push(`${t.aliasingVelocity}: ${aliasing} cm/s`);
+    if (parts.length === 0) return null;
+    return `${groupLabel}: ${parts.join("; ")}`;
+  }
+
+  function buildReportText() {
+    const t = translations[state.language];
+    const s = state;
+    const blocks = [];
+
+    // BSA
+    if (lastResults.bsa !== null) {
+      blocks.push(`${t.bsaResult}: ${fmt(lastResults.bsa)} m²`);
+    }
+
+    // MR PISA
+    blocks.push(pisaLine(t, t.mrPisaGroup, t.mrEro, t.mrRegVol, t.mrRegFraction,
+      s.mrPisaRadius, s.mrVmax, s.mrVti, s.mrAliasingVelocity,
+      lastResults.mrEro, lastResults.mrRegVol, lastResults.mrRegFraction));
+
+    // LVOT / AV / AVA / DVI block — one line per item, no blank lines between them
+    const lvotLines = [];
+    const lvotDiam = fmtInput(s.lvotDiam);
+    if (lvotDiam !== null) lvotLines.push(`${t.lvotDiam}: ${lvotDiam} mm`);
+    const lvotVti = fmtInput(s.lvotVti);
+    if (lvotVti !== null) lvotLines.push(`${t.lvotVti}: ${lvotVti} cm`);
+    const avVti = fmtInput(s.aorticVti);
+    if (avVti !== null) lvotLines.push(`AV VTI: ${avVti} cm`);
+    if (lastResults.ava !== null) lvotLines.push(`${t.ava}: ${fmt(lastResults.ava)} cm²`);
+    if (lastResults.avai !== null) lvotLines.push(`${t.avai}: ${fmt(lastResults.avai)} cm²/m²`);
+    const hasDviVti = lastResults.dviVti !== null;
+    const hasDviVmax = lastResults.dviVmax !== null;
+    if (hasDviVti && hasDviVmax) {
+      lvotLines.push(`DVI(VTI): ${fmt(lastResults.dviVti)}; DVI(Vmax): ${fmt(lastResults.dviVmax)}`);
+    } else if (hasDviVti) {
+      lvotLines.push(`DVI: ${fmt(lastResults.dviVti)}`);
+    } else if (hasDviVmax) {
+      lvotLines.push(`DVI: ${fmt(lastResults.dviVmax)}`);
+    }
+    blocks.push(lvotLines.length ? lvotLines.join("\n") : null);
+
+    // AR PISA
+    blocks.push(pisaLine(t, t.arPisaGroup, t.arEro, t.arRegVol, t.arRegFraction,
+      s.arPisaRadius, s.arVmax, s.arVti, s.arAliasingVelocity,
+      lastResults.arEro, lastResults.arRegVol, lastResults.arRegFraction));
+
+    // TR PISA — no regFraction (not calculated for TR)
+    blocks.push(pisaLine(t, t.trPisaGroup, t.trEro, t.trRegVol, null,
+      s.trPisaRadius, s.trVmax, s.trVti, s.trAliasingVelocity,
+      lastResults.trEro, lastResults.trRegVol, null));
+
+    return blocks.filter(b => b !== null).join("\n\n");
+  }
+
+  function flashCopyButton(message) {
+    const btn = $("#copyBtn");
+    btn.textContent = message;
+    clearTimeout(flashCopyButton._t);
+    flashCopyButton._t = setTimeout(() => applyTranslations(), 1500);
+  }
+
+  function legacyCopy(text) {
+    // execCommand fallback — needed because navigator.clipboard.writeText()
+    // exists but unreliably rejects with a permission error specifically
+    // inside iOS standalone home-screen PWAs (a known WebKit quirk); this
+    // older API works there even when the modern one doesn't.
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  $("#copyBtn").addEventListener("click", async () => {
+    const t = translations[state.language];
+    const text = buildReportText();
+    if (!text) {
+      flashCopyButton(t.copyEmpty);
+      return;
+    }
+    let ok = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch (e) { /* fall through to legacy fallback below */ }
+    }
+    if (!ok) ok = legacyCopy(text);
+    flashCopyButton(ok ? t.copied : t.copyFailed);
+  });
 
   applyTranslations();
   computeResults();
