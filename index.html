@@ -571,6 +571,44 @@
     margin-bottom: 8px;
   }
   .info-notes li:last-child { margin-bottom: 0; }
+
+  /* Echo Wiki */
+  .wiki-topic-list { display: flex; flex-direction: column; gap: 8px; }
+  .wiki-topic-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    color: var(--text-main);
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+  }
+  .wiki-topic-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .wiki-topic-item svg { width: 18px; height: 18px; color: var(--text-sub); flex-shrink: 0; }
+  .wiki-empty {
+    color: var(--text-sub);
+    font-size: 14px;
+    text-align: center;
+    padding: 48px 24px;
+    line-height: 1.6;
+  }
+  .wiki-body { font-size: 15px; line-height: 1.65; color: var(--text-main); }
+  .wiki-body p { margin: 0 0 14px; }
+  .wiki-body p:last-child { margin-bottom: 0; }
+  .wiki-body h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; }
+  .wiki-body ul { margin: 0 0 14px; padding-left: 20px; }
+  .wiki-body li { margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -578,6 +616,9 @@
   <header class="appbar">
     <h1 id="title">Echo Calculator</h1>
     <div class="header-controls">
+      <button class="theme-toggle" id="wikiBtn" type="button" aria-label="Echo Wiki">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5C4 4.67 4.67 4 5.5 4H12v16H5.5A1.5 1.5 0 0 1 4 18.5v-13z"></path><path d="M20 5.5c0-.83-.67-1.5-1.5-1.5H12v16h6.5a1.5 1.5 0 0 0 1.5-1.5v-13z"></path></svg>
+      </button>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
@@ -838,6 +879,21 @@
   </div>
 </div>
 
+<div class="info-overlay" id="wikiOverlay" hidden>
+  <div class="info-panel">
+    <div class="info-bar">
+      <button class="info-close" type="button" id="wikiBack" hidden aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <h2 id="wikiTitle"></h2>
+      <button class="info-close" type="button" id="wikiClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="info-content" id="wikiContent"></div>
+  </div>
+</div>
+
 <script>
 (function () {
   const translations = {
@@ -860,6 +916,7 @@
       decimalError: "Please use '.' as decimal separator",
       copyReport: "Copy to clipboard", copied: "Copied to clipboard",
       copyEmpty: "Nothing to copy yet", copyFailed: "Couldn't copy — select and copy manually",
+      wikiTitle: "Echo Wiki", wikiEmpty: "No topics yet — check back soon.",
     },
     hu: {
       title: "Echo Kalkulátor", patientData: "Beteg adatok", weight: "Testsúly", height: "Testmagasság",
@@ -880,6 +937,7 @@
       decimalError: "Kérjük, használja a ',' tizedeselválasztót",
       copyReport: "Másolás vágólapra", copied: "Vágólapra másolva",
       copyEmpty: "Nincs még mit másolni", copyFailed: "Sikertelen másolás — másold ki kézzel",
+      wikiTitle: "Echo Wiki", wikiEmpty: "Még nincsenek témák — nézz vissza hamarosan.",
     },
   };
 
@@ -1155,8 +1213,8 @@
   };
 
   const uiStrings = {
-    en: { notes: "Notes", close: "Close" },
-    hu: { notes: "Megjegyzések", close: "Bezárás" },
+    en: { notes: "Notes", close: "Close", back: "Back" },
+    hu: { notes: "Megjegyzések", close: "Bezárás", back: "Vissza" },
   };
   const infoAriaLabels = {
     en: {
@@ -1231,6 +1289,75 @@
     });
     $("#infoClose").setAttribute("aria-label", uiStrings[state.language].close);
     if (currentInfoTopic) renderInfo(currentInfoTopic);
+  }
+
+  // ---- Echo Wiki ----
+  // Add new topics here as they're written — each needs a stable id, a title,
+  // and a body per language. body is raw HTML (wrapped in .wiki-body), so
+  // <p>, <h3>, <ul>/<li> etc. all work. Topics render in array order.
+  //
+  // Example entry:
+  // { id: "pisa", title: { en: "The PISA method", hu: "A PISA módszer" },
+  //   body: { en: "<p>...</p>", hu: "<p>...</p>" } }
+  const wikiTopics = [];
+
+  let currentWikiTopic = null;
+
+  function renderWikiList() {
+    $("#wikiTitle").textContent = translations[state.language].wikiTitle;
+    $("#wikiBack").hidden = true;
+    if (wikiTopics.length === 0) {
+      $("#wikiContent").innerHTML = `<div class="wiki-empty">${translations[state.language].wikiEmpty}</div>`;
+      return;
+    }
+    $("#wikiContent").innerHTML = `
+      <div class="wiki-topic-list">
+        ${wikiTopics.map(topic => `
+          <button class="wiki-topic-item" type="button" data-wiki-topic="${topic.id}">
+            <span>${topic.title[state.language]}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
+          </button>
+        `).join("")}
+      </div>
+    `;
+    $$("[data-wiki-topic]", $("#wikiContent")).forEach(btn => {
+      btn.addEventListener("click", () => openWikiTopic(btn.dataset.wikiTopic));
+    });
+  }
+
+  function renderWikiTopic(id) {
+    const topic = wikiTopics.find(t => t.id === id);
+    if (!topic) { renderWikiList(); return; }
+    $("#wikiTitle").textContent = topic.title[state.language];
+    $("#wikiBack").hidden = false;
+    $("#wikiContent").innerHTML = `<div class="wiki-body">${topic.body[state.language]}</div>`;
+  }
+
+  function openWiki() {
+    currentWikiTopic = null;
+    renderWikiList();
+    $("#wikiOverlay").hidden = false;
+  }
+  function openWikiTopic(id) {
+    currentWikiTopic = id;
+    renderWikiTopic(id);
+  }
+  function backToWikiList() {
+    currentWikiTopic = null;
+    renderWikiList();
+  }
+  function closeWiki() {
+    currentWikiTopic = null;
+    $("#wikiOverlay").hidden = true;
+  }
+  function refreshWikiLanguage() {
+    $("#wikiBack").setAttribute("aria-label", uiStrings[state.language].back);
+    $("#wikiClose").setAttribute("aria-label", uiStrings[state.language].close);
+    $("#wikiBtn").setAttribute("aria-label", translations[state.language].wikiTitle);
+    if (!$("#wikiOverlay").hidden) {
+      if (currentWikiTopic) renderWikiTopic(currentWikiTopic);
+      else renderWikiList();
+    }
   }
 
   // ---- state ----
@@ -1333,6 +1460,7 @@
     $$("input[data-field]").forEach(checkDecimal);
     computeResults();
     refreshInfoLanguage();
+    refreshWikiLanguage();
   });
 
   $("#themeToggle").addEventListener("click", () => {
@@ -1345,8 +1473,15 @@
     btn.addEventListener("click", () => openInfo(btn.dataset.info));
   });
   $("#infoClose").addEventListener("click", closeInfo);
+
+  $("#wikiBtn").addEventListener("click", openWiki);
+  $("#wikiClose").addEventListener("click", closeWiki);
+  $("#wikiBack").addEventListener("click", backToWikiList);
+
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !$("#infoOverlay").hidden) closeInfo();
+    if (e.key !== "Escape") return;
+    if (!$("#infoOverlay").hidden) closeInfo();
+    if (!$("#wikiOverlay").hidden) closeWiki();
   });
 
   $("#clearBtn").addEventListener("click", () => {
@@ -1562,6 +1697,7 @@
   applyTranslations();
   computeResults();
   refreshInfoLanguage();
+  refreshWikiLanguage();
 })();
 
 if ('serviceWorker' in navigator) {
