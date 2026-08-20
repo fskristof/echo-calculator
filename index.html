@@ -260,17 +260,26 @@
     column-gap: 10px;
   }
   .field label {
+    position: relative;
     font-size: 14.5px;
     font-weight: 500;
     color: var(--text-sub);
     line-height: 1.3;
   }
+  /* Taken out of flow so the grid row's vertical centering sees only the
+     main label line's height — the main label text lines up with the
+     input's vertical center, and "optional" just hangs below it, rather
+     than the two lines centering as one block (which would push the main
+     label line above the input's center). */
   .field-label-optional {
-    display: block;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    margin-top: 1px;
     font-size: 12px;
     font-weight: 400;
     color: var(--text-placeholder);
-    margin-top: 1px;
+    white-space: nowrap;
   }
   .field .field-value { min-width: 0; }
   .field .field-input-wrap { position: relative; }
