@@ -249,14 +249,31 @@
   .subgroup .field-stack { padding: 0 4px; display: flex; flex-direction: column; gap: 12px; }
   .subgroup .field-stack[hidden] { display: none; }
 
+  /* Label sits beside the input rather than above it, in a fixed-width
+     column shared by every field — so every input box across the whole
+     app lines up to the same left edge and width, regardless of how long
+     an individual label is. Longer labels simply wrap to two lines. */
+  .field {
+    display: grid;
+    grid-template-columns: 108px 1fr;
+    align-items: center;
+    column-gap: 10px;
+  }
   .field label {
-    display: block;
     font-size: 13px;
     font-weight: 500;
     color: var(--text-sub);
-    margin-bottom: 8px;
+    line-height: 1.3;
   }
-
+  .field-label-optional {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-placeholder);
+    margin-top: 1px;
+  }
+  .field .field-value { min-width: 0; }
+  .field .field-input-wrap { position: relative; }
   .field input {
     width: 100%;
     background: var(--input-bg);
@@ -269,10 +286,25 @@
     font-variant-numeric: tabular-nums;
     transition: border-color 0.12s ease;
   }
+  /* Reserve room on the right for the unit label so typed digits never
+     run under it — kept in sync with .field-unit's own position below. */
+  .field input.has-unit { padding-right: 44px; }
   .field input::placeholder { color: var(--text-placeholder); }
   .field input:not(:placeholder-shown) { border-color: var(--input-border-active); }
   .field input.error { border-color: var(--input-border-error) !important; }
   .field input:focus { outline: none; border-color: var(--input-border-active); }
+  /* Purely a visual overlay — doesn't affect the input's own box, so
+     adding or removing a unit never shifts the input's width or alignment. */
+  .field-unit {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--text-sub);
+    pointer-events: none;
+    white-space: nowrap;
+  }
   .field .decimal-error {
     color: var(--danger);
     font-size: 12px;
@@ -776,30 +808,50 @@
 
         <div id="bsaAutoFields">
           <div class="field">
-            <label data-t-unit="weight|kg">Weight (kg)</label>
-            <input type="text" inputmode="decimal" placeholder="0" data-field="weight">
-            <div class="decimal-error" hidden data-t="decimalError"></div>
+            <label data-t="weight"></label>
+            <div class="field-value">
+              <div class="field-input-wrap">
+                <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="weight">
+                <span class="field-unit">kg</span>
+              </div>
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
           </div>
           <div class="field">
-            <label data-t-unit="height|cm">Height (cm)</label>
-            <input type="text" inputmode="decimal" placeholder="0" data-field="height">
-            <div class="decimal-error" hidden data-t="decimalError"></div>
+            <label data-t="height"></label>
+            <div class="field-value">
+              <div class="field-input-wrap">
+                <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="height">
+                <span class="field-unit">cm</span>
+              </div>
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
           </div>
         </div>
 
         <div id="bsaManualFields" hidden>
           <div class="field">
-            <label data-t-unit="bsaResult|m²">BSA (m²)</label>
-            <input type="text" inputmode="decimal" placeholder="0" data-field="bsaManual">
-            <div class="decimal-error" hidden data-t="decimalError"></div>
+            <label data-t="bsaResult"></label>
+            <div class="field-value">
+              <div class="field-input-wrap">
+                <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="bsaManual">
+                <span class="field-unit">m²</span>
+              </div>
+              <div class="decimal-error" hidden data-t="decimalError"></div>
+            </div>
           </div>
         </div>
 
         <p class="heart-rate-label" data-t="heartRateGroup">Heart Rate</p>
         <div class="field">
-          <label data-t-unit="heartRate|bpm">Heart Rate (bpm)</label>
-          <input type="text" inputmode="decimal" placeholder="0" data-field="heartRate">
-          <div class="decimal-error" hidden data-t="decimalError"></div>
+          <label data-t="heartRate"></label>
+          <div class="field-value">
+            <div class="field-input-wrap">
+              <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="heartRate">
+              <span class="field-unit">bpm</span>
+            </div>
+            <div class="decimal-error" hidden data-t="decimalError"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -818,24 +870,44 @@
           </div>
           <div class="field-stack">
             <div class="field">
-              <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="mrPisaRadius">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="pisaRadius"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mrPisaRadius">
+                  <span class="field-unit">mm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="aliasingVelocity|cm/s">Aliasing velocity (cm/s)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="mrAliasingVelocity">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="aliasingVelocity"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mrAliasingVelocity">
+                  <span class="field-unit">cm/s</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="vmax|m/s">Vmax (m/s)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="mrVmax">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="vmax"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mrVmax">
+                  <span class="field-unit">m/s</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="vti|cm">VTI (cm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="mrVti">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="vti"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mrVti">
+                  <span class="field-unit">cm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -847,9 +919,14 @@
           </div>
           <div class="field-stack">
             <div class="field">
-              <label data-t-unit="|cm">(cm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="mvVtiPw">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="vti"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mvVtiPw">
+                  <span class="field-unit">cm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -872,19 +949,34 @@
           </button>
           <div class="field-stack sub-body" hidden style="margin-top:12px;">
             <div class="field">
-              <label data-t-unit="lvotDiam|mm">LVOT diameter (mm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="lvotDiam">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="lvotDiam"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="lvotDiam">
+                  <span class="field-unit">mm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="lvotVti|cm">LVOT VTI (cm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="lvotVti">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="lvotVti"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="lvotVti">
+                  <span class="field-unit">cm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="lvotVmax|m/s">LVOT Vmax (m/s)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="lvotVmax">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="lvotVmax"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="lvotVmax">
+                  <span class="field-unit">m/s</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -900,19 +992,34 @@
           </div>
           <div class="field-stack sub-body" hidden style="margin-top:12px;">
             <div class="field">
-              <label data-t-unit="aorticVmax|m/s">Vmax (optional) (m/s)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="aorticVmax">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label><span data-t="aorticVmax"></span><span class="field-label-optional" data-t="optional"></span></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="aorticVmax">
+                  <span class="field-unit">m/s</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="meanGradient|mmHg">Mean gradient (optional) (mmHg)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="meanGradient">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label><span data-t="meanGradient"></span><span class="field-label-optional" data-t="optional"></span></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="meanGradient">
+                  <span class="field-unit">mmHg</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="aorticVti|cm">VTI (cm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="aorticVti">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="aorticVti"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="aorticVti">
+                  <span class="field-unit">cm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -928,24 +1035,44 @@
           </div>
           <div class="field-stack sub-body" hidden style="margin-top:12px;">
             <div class="field">
-              <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="arPisaRadius">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="pisaRadius"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="arPisaRadius">
+                  <span class="field-unit">mm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="aliasingVelocity|cm/s">Aliasing velocity (cm/s)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="arAliasingVelocity">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="aliasingVelocity"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="arAliasingVelocity">
+                  <span class="field-unit">cm/s</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="vmax|m/s">Vmax (m/s)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="arVmax">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="vmax"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="arVmax">
+                  <span class="field-unit">m/s</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="vti|cm">VTI (cm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="arVti">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="vti"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="arVti">
+                  <span class="field-unit">cm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -966,24 +1093,44 @@
           </div>
           <div class="field-stack">
             <div class="field">
-              <label data-t-unit="pisaRadius|mm">PISA radius (mm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="trPisaRadius">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="pisaRadius"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="trPisaRadius">
+                  <span class="field-unit">mm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="aliasingVelocity|cm/s">Aliasing velocity (cm/s)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="trAliasingVelocity">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="aliasingVelocity"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="trAliasingVelocity">
+                  <span class="field-unit">cm/s</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="vmax|m/s">Vmax (m/s)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="trVmax">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="vmax"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="trVmax">
+                  <span class="field-unit">m/s</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
             <div class="field">
-              <label data-t-unit="vti|cm">VTI (cm)</label>
-              <input type="text" inputmode="decimal" placeholder="0" data-field="trVti">
-              <div class="decimal-error" hidden data-t="decimalError"></div>
+              <label data-t="vti"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="trVti">
+                  <span class="field-unit">cm</span>
+                </div>
+                <div class="decimal-error" hidden data-t="decimalError"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1045,7 +1192,7 @@
       tricuspidValveGroup: "Tricuspid Valve", trPisaGroup: "TR PISA",
       pisaRadius: "PISA radius", aliasingVelocity: "Aliasing velocity", vmax: "Vmax", vti: "VTI",
       lvotDiam: "LVOT diameter", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
-      aorticVmax: "Vmax (optional)", meanGradient: "Mean gradient (optional)", aorticVti: "VTI",
+      aorticVmax: "Vmax", meanGradient: "Mean gradient", aorticVti: "VTI", optional: "optional",
       mrEro: "MR ERO", mrRegVol: "MR Reg. vol.", mrRegFraction: "MR Reg. fraction",
       arEro: "AR ERO", arRegVol: "AR Reg. vol.", arRegFraction: "AR Reg. fraction",
       trEro: "TR ERO", trRegVol: "TR Reg. vol.",
@@ -1066,7 +1213,7 @@
       tricuspidValveGroup: "Tricuspidalis billentyű", trPisaGroup: "TR PISA",
       pisaRadius: "PISA radius", aliasingVelocity: "Aliasing sebesség", vmax: "Vmax", vti: "VTI",
       lvotDiam: "LVOT átmérő", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
-      aorticVmax: "Vmax (opcionális)", meanGradient: "Átlag gradiens (opcionális)", aorticVti: "VTI",
+      aorticVmax: "Vmax", meanGradient: "Átlag gradiens", aorticVti: "VTI", optional: "opcionális",
       mrEro: "MR ERO", mrRegVol: "MR Reg. volumen", mrRegFraction: "MR Reg. frakció",
       arEro: "AR ERO", arRegVol: "AR Reg. volumen", arRegFraction: "AR Reg. frakció",
       trEro: "TR ERO", trRegVol: "TR Reg. volumen",
@@ -2099,11 +2246,6 @@
       const key = el.getAttribute("data-t");
       if (t[key] !== undefined) el.textContent = t[key];
     });
-    $$("[data-t-unit]").forEach(el => {
-      const [key, unit] = el.getAttribute("data-t-unit").split("|");
-      const label = key ? t[key] : "";
-      el.textContent = unit ? `${label} (${unit})`.trim() : label;
-    });
     $("#bsaModeToggle").textContent = state.bsaManualMode ? t.bsaCalculate : t.bsaManual;
     $("#langToggle").textContent = state.language === "en" ? "HU" : "EN";
     document.title = t.title;
@@ -2112,7 +2254,7 @@
   function checkDecimal(input) {
     const value = input.value;
     const wrong = (state.language === "en" && value.includes(",")) || (state.language === "hu" && value.includes("."));
-    const errEl = input.parentElement.querySelector(".decimal-error");
+    const errEl = input.closest(".field").querySelector(".decimal-error");
     input.classList.toggle("error", wrong);
     if (errEl) errEl.hidden = !wrong;
   }
