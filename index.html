@@ -2012,7 +2012,14 @@
     const lang = state.language;
     if (foldWikiText(topic.title[lang]).includes(foldedQuery)) return true;
     const kw = topic.keywords && topic.keywords[lang];
-    return !!kw && kw.some(k => foldWikiText(k).includes(foldedQuery));
+    if (kw && kw.some(k => foldWikiText(k).includes(foldedQuery))) return true;
+    const summary = topic.summary && topic.summary[lang];
+    if (summary && summary.some(line => foldWikiText(line).includes(foldedQuery))) return true;
+    // Body is raw HTML — strip tags before folding so markup never
+    // accidentally matches (or blocks) a query.
+    const body = topic.body && topic.body[lang];
+    if (body && foldWikiText(body.replace(/<[^>]*>/g, " ")).includes(foldedQuery)) return true;
+    return false;
   }
 
   function renderWikiTopicButton(topic) {
