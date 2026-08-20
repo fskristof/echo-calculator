@@ -237,7 +237,7 @@
   .subgroup {
     background: var(--subtle-bg);
     border-radius: 12px;
-    padding: 8px 8px 4px;
+    padding: 8px;
     border: 1px solid var(--input-border);
   }
   .subgroup + .subgroup { margin-top: 12px; }
@@ -948,11 +948,11 @@
 
         <!-- LVOT subgroup -->
         <div class="subgroup" data-subcard="lvot">
-          <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
+          <button class="card-header" type="button" aria-expanded="true" style="margin:0;">
             <span class="title" style="font-size:16px;" data-t="lvotGroup">LVOT</span>
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
-          <div class="field-stack sub-body" hidden style="margin-top:12px;">
+          <div class="field-stack sub-body" style="margin-top:12px;">
             <div class="field">
               <label data-t="lvotDiam"></label>
               <div class="field-value">
@@ -986,13 +986,13 @@
         <!-- Aortic valve subgroup -->
         <div class="subgroup" data-subcard="av">
           <div class="head-row">
-            <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
+            <button class="card-header" type="button" aria-expanded="true" style="margin:0;">
               <span class="title" style="font-size:16px;" data-t="aorticValveGroup">Aortic Valve</span>
             </button>
             <button class="info-btn" type="button" data-info="as" aria-label="Aortic stenosis severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div class="field-stack sub-body" hidden style="margin-top:12px;">
+          <div class="field-stack sub-body" style="margin-top:12px;">
             <div class="field">
               <label><span data-t="aorticVmax"></span><span class="field-label-optional" data-t="optional"></span></label>
               <div class="field-value">
