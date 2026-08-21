@@ -616,6 +616,26 @@
   html[data-theme="dark"] table.info-table th.col-massive,
   html[data-theme="dark"] table.info-table th.col-torrential { color: var(--grade-extreme-text); }
 
+  /* Inline in-app links, styled as plain hyperlinks. Two flavors, told apart
+     by their data attribute: data-wiki-topic opens that wiki topic (used in
+     severity-table row labels, e.g. the "PISA" in "PISA radius (mm)"), and
+     data-scroll-target scrolls the current wiki body to that element's id
+     (e.g. a summary line jumping to a heading further down the same topic).
+     Rendered as a <button> rather than an <a> since both are in-app actions,
+     not navigable URLs. */
+  .wiki-inline-link {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .wiki-inline-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
   .info-notes {
     background: var(--card);
     border-radius: 12px;
@@ -1391,7 +1411,7 @@
         headers: ["Parameter", "Mild", "Moderate", "Severe"],
         rows: [
           ["Vena contracta (mm)", "<3.0", "3.0–6.9", "≥7.0"],
-          ["PISA radius (mm)", "<4", "4–10", ">10"],
+          ['<button type="button" class="wiki-inline-link" data-wiki-topic="pisa-method">PISA</button> radius (mm)', "<4", "4–10", ">10"],
           ["EROA (cm²)", "<0.2", "0.2–0.4", ">0.4"],
           ["Reg. vol. (ml)", "<30", "30–59", "≥60"],
           ["Reg. fraction (%)", "<30", "30–49", "≥50"],
@@ -1430,7 +1450,7 @@
         headers: ["Parameter", "Mild", "Moderate", "Severe", "Massive", "Torrential"],
         rows: [
           ["Vena contracta avg (mm)", "<3", "3–6.9", "7–13.9", "14–20", ">20"],
-          ["PISA radius (mm)", "<5", "6–9", ">9", "", ""],
+          ['<button type="button" class="wiki-inline-link" data-wiki-topic="pisa-method">PISA</button> radius (mm)', "<5", "6–9", ">9", "", ""],
           ["EROA (cm²)", "<0.2", "0.2–0.39", "0.4–0.59", "0.6–0.79", "≥0.8"],
           ["Reg. vol. (ml)", "<30", "30–44", "45–59", "60–74", "≥75"],
           ["Hepatic vein flow", "S dominant (normal)", "S “blunting”", { text: "Systolic reverse flow", span: 3 }],
@@ -1486,7 +1506,7 @@
         headers: ["Paraméter", "Enyhe", "Közepes", "Súlyos"],
         rows: [
           ["Vena contracta (mm)", "<3,0", "3,0–6,9", "≥7,0"],
-          ["PISA radius (mm)", "<4", "4–10", ">10"],
+          ['<button type="button" class="wiki-inline-link" data-wiki-topic="pisa-method">PISA</button> radius (mm)', "<4", "4–10", ">10"],
           ["EROA (cm²)", "<0,2", "0,2–0,4", ">0,4"],
           ["Reg. volumen (ml)", "<30", "30–59", "≥60"],
           ["Reg. frakció (%)", "<30", "30–49", "≥50"],
@@ -1525,7 +1545,7 @@
         headers: ["Paraméter", "Enyhe", "Közepes", "Súlyos", "Masszív", "Torrentialis"],
         rows: [
           ["Vena contracta átlag (mm)", "<3", "3–6,9", "7–13,9", "14–20", ">20"],
-          ["PISA radius (mm)", "<5", "6–9", ">9", "", ""],
+          ['<button type="button" class="wiki-inline-link" data-wiki-topic="pisa-method">PISA</button> radius (mm)', "<5", "6–9", ">9", "", ""],
           ["EROA (cm²)", "<0,2", "0,2–0,39", "0,4–0,59", "0,6–0,79", "≥0,8"],
           ["Reg. volumen (ml)", "<30", "30–44", "45–59", "60–74", "≥75"],
           ["V. hepatica áramlás", "S domináns (norm.)", "S „blunting”", { text: "Szisztolés reverz flow", span: 3 }],
@@ -2003,6 +2023,7 @@
           "Hepatic vein expiratory diastolic flow reversal; stays reliable in AF, unlike mitral inflow variation.",
           "<strong>Do not use E/e′ to estimate filling pressure here</strong> — annular motion is exaggerated despite high pressures.",
           "Longitudinal strain preserved, circumferential impaired — the reverse of restrictive cardiomyopathy.",
+          '<button type="button" class="wiki-inline-link" data-scroll-target="cp-diagnostic-algorithm">Diagnostic algorithm</button>',
         ],
         hu: [
           "A légzésfüggő septum-elmozdulás a belépő jel — a belégzés első ütésében keressük.",
@@ -2010,6 +2031,7 @@
           "Vena hepatica kilégzési diasztolés reverz áramlás; pitvarfibrillációban is megbízható, a mitralis beáramlással ellentétben.",
           "<strong>Az E/e′ itt nem használható a telődési nyomás becslésére</strong> — az annulus mozgása a magas nyomások ellenére fokozott.",
           "A longitudinális strain megtartott, a circumferentialis beszűkült — fordítva, mint restriktív cardiomyopathiában.",
+          '<button type="button" class="wiki-inline-link" data-scroll-target="cp-diagnostic-algorithm">Diagnosztikus algoritmus</button>',
         ],
       },
       body: {
@@ -2047,7 +2069,7 @@
             <li><strong>RV/LV systolic pressure with inspiration:</strong> constriction → discordant (opposite directions); restriction → concordant (same direction).</li>
           </ul>
 
-          <h3>Diagnostic algorithm (ESC/EACVI echo algorithm)</h3>
+          <h3 id="cp-diagnostic-algorithm">Diagnostic algorithm (ESC/EACVI echo algorithm)</h3>
           ${cpAlgorithmFigure("en")}
           <p><strong>Findings favoring restriction</strong> (when suspicion of a restrictive component persists): DT &lt; 150 ms, IVRT &lt; 50 ms, PV systolic fraction &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
           <p>When a comprehensive TTE study is diagnostic for constriction, no further testing is usually necessary; cardiac catheterization is reserved for inconclusive or discordant cases.</p>
@@ -2096,7 +2118,7 @@
             <li><strong>Jobb/bal kamrai szisztolés nyomás belégzéskor:</strong> constrictio → diszkordáns (ellentétes irányú); restrictio → konkordáns (azonos irányú).</li>
           </ul>
 
-          <h3>Diagnosztikus algoritmus (ESC/EACVI echo algoritmus)</h3>
+          <h3 id="cp-diagnostic-algorithm">Diagnosztikus algoritmus (ESC/EACVI echo algoritmus)</h3>
           ${cpAlgorithmFigure("hu")}
           <p><strong>Restrictiót valószínűsítő jelek</strong> (ha restriktív komponens gyanúja továbbra is fennáll): DT &lt; 150 ms, IVRT &lt; 50 ms, pulmonalis vénás szisztolés frakció &lt; 40%, E/e′ &gt; 15, LAVI &gt; 48 ml/m².</p>
           <p>Ha egy átfogó TTE vizsgálat diagnosztikus constrictióra, további vizsgálat általában nem szükséges; a szívkatéterezés a nem egyértelmű vagy ellentmondó esetek számára van fenntartva.</p>
@@ -2635,6 +2657,26 @@
     btn.addEventListener("click", () => openInfo(btn.dataset.info));
   });
   $("#infoClose").addEventListener("click", closeInfo);
+
+  // Inline .wiki-inline-link buttons (see the CSS comment above their rule)
+  // — delegated on document since their markup is (re)rendered dynamically,
+  // both in the info overlay (severity tables) and inside wiki bodies
+  // (summary lines, table row labels). A data-wiki-topic link closes the
+  // info overlay first if that's where the click came from — the wiki and
+  // info overlays share a single focus-return slot (setupOverlay/
+  // teardownOverlay) and are meant to be mutually exclusive. A
+  // data-scroll-target link just scrolls the (already-open) wiki body.
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest(".wiki-inline-link");
+    if (!link) return;
+    if (link.dataset.scrollTarget) {
+      const target = document.getElementById(link.dataset.scrollTarget);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if (!$("#infoOverlay").hidden) closeInfo();
+    openWikiTopic(link.dataset.wikiTopic);
+  });
 
   $("#wikiBtn").addEventListener("click", openWiki);
   $("#wikiClose").addEventListener("click", closeWiki);
