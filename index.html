@@ -213,6 +213,13 @@
     font-weight: 600;
   }
 
+  .title-note {
+    font-size: 0.7em;
+    font-weight: 400;
+    color: var(--text-sub);
+    margin-left: 4px;
+  }
+
   .chevron {
     width: 22px;
     height: 22px;
@@ -873,12 +880,17 @@
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </button>
       <div class="card-body" hidden>
-        <div class="subgroup">
-          <div class="subgroup-title-row">
-            <p class="subgroup-title" data-t="mrPisaGroup">MR PISA</p>
+
+        <!-- MR PISA subgroup -->
+        <div class="subgroup" data-subcard="mrpisa">
+          <div class="head-row">
+            <button class="card-header" type="button" aria-expanded="true" style="margin:0;">
+              <span class="title" style="font-size:16px;" data-t="mrPisaGroup">MR PISA</span>
+            </button>
             <button class="info-btn" type="button" data-info="mr" aria-label="Mitral regurgitation severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
+            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div class="field-stack">
+          <div class="field-stack sub-body" style="margin-top:12px;">
             <div class="field">
               <label data-t="pisaRadius"></label>
               <div class="field-value">
@@ -918,18 +930,53 @@
           </div>
         </div>
 
-        <div class="subgroup">
-          <div class="subgroup-title-row">
-            <p class="subgroup-title" data-t="mvVtiPw">MV VTI (PW)</p>
+        <!-- MV VTI (PW) subgroup -->
+        <div class="subgroup" data-subcard="mvvtipw">
+          <div class="head-row">
+            <button class="card-header" type="button" aria-expanded="true" style="margin:0;">
+              <span class="title" style="font-size:16px;"><span data-t="mvVtiPw">MV VTI (PW)</span><span class="title-note" data-t="mvVtiPwNote">(for regurgitation grading)</span></span>
+            </button>
             <button class="info-btn" type="button" data-info="mr" aria-label="Mitral regurgitation severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
+            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div class="field-stack">
+          <div class="field-stack sub-body" style="margin-top:12px;">
             <div class="field">
               <label data-t="vti"></label>
               <div class="field-value">
                 <div class="field-input-wrap">
                   <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mvVtiPw">
                   <span class="field-unit">cm</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mitral Stenosis subgroup -->
+        <div class="subgroup" data-subcard="ms">
+          <div class="head-row">
+            <button class="card-header" type="button" aria-expanded="false" style="margin:0;">
+              <span class="title" style="font-size:16px;" data-t="mitralStenosisGroup">Mitral Stenosis</span>
+            </button>
+            <button class="info-btn" type="button" data-info="ms" aria-label="Mitral stenosis severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
+            <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="field-stack sub-body" hidden style="margin-top:12px;">
+            <div class="field">
+              <label data-t="mvVtiCw"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mvVtiCw">
+                  <span class="field-unit">cm</span>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label data-t="mvPht"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mvPht">
+                  <span class="field-unit">ms</span>
                 </div>
               </div>
             </div>
@@ -1179,6 +1226,8 @@
       bsaResult: "BSA", bsaManual: "Enter BSA manually", bsaCalculate: "Calculate BSA",
       heartRateGroup: "Heart Rate", heartRate: "Heart Rate",
       mitralValveGroup: "Mitral Valve", mrPisaGroup: "MR PISA", mvVtiPw: "MV VTI (PW)",
+      mvVtiPwNote: "(for regurgitation grading)",
+      mitralStenosisGroup: "Mitral Stenosis", mvVtiCw: "MV VTI (CW)", mvPht: "MV PHT",
       aorticValveMainGroup: "Aortic Valve", lvotGroup: "LVOT", aorticValveGroup: "Aortic Valve", arPisaGroup: "AR PISA",
       tricuspidValveGroup: "Tricuspid Valve", trPisaGroup: "TR PISA",
       pisaRadius: "PISA radius", aliasingVelocity: "Aliasing velocity", vmax: "Vmax", vti: "VTI",
@@ -1189,6 +1238,7 @@
       trEro: "TR ERO", trRegVol: "TR Reg. vol.",
       sv: "SV", svi: "SV(i)", cardiacOutput: "Cardiac output", cardiacIndex: "Cardiac Index",
       ava: "AVA", avai: "AVAi", dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
+      mvaVti: "MVA (VTI)", mvaPht: "MVA (PHT)",
       clear: "Clear All", results: "Calculated Results",
       copyReport: "Copy to clipboard", copied: "Copied to clipboard",
       copyEmpty: "Nothing to copy yet", copyFailed: "Couldn't copy — select and copy manually",
@@ -1199,6 +1249,8 @@
       bsaResult: "BSA", bsaManual: "BSA kézi bevitel", bsaCalculate: "BSA számítása",
       heartRateGroup: "Pulzusszám", heartRate: "Pulzusszám",
       mitralValveGroup: "Mitrális billentyű", mrPisaGroup: "MR PISA", mvVtiPw: "MV VTI (PW)",
+      mvVtiPwNote: "(regurgitatio kvantifikációhoz)",
+      mitralStenosisGroup: "Mitrális stenosis", mvVtiCw: "MV VTI (CW)", mvPht: "MV PHT",
       aorticValveMainGroup: "Aorta billentyű", lvotGroup: "LVOT", aorticValveGroup: "Aorta billentyű", arPisaGroup: "AR PISA",
       tricuspidValveGroup: "Tricuspidalis billentyű", trPisaGroup: "TR PISA",
       pisaRadius: "PISA radius", aliasingVelocity: "Aliasing sebesség", vmax: "Vmax", vti: "VTI",
@@ -1209,6 +1261,7 @@
       trEro: "TR ERO", trRegVol: "TR Reg. volumen",
       sv: "SV", svi: "SV(i)", cardiacOutput: "Perctérfogat", cardiacIndex: "Cardiac Index",
       ava: "AVA", avai: "AVAi", dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
+      mvaVti: "MVA (VTI)", mvaPht: "MVA (PHT)",
       clear: "Összes törlése", results: "Számított eredmények",
       copyReport: "Másolás vágólapra", copied: "Vágólapra másolva",
       copyEmpty: "Nincs még mit másolni", copyFailed: "Sikertelen másolás — másold ki kézzel",
@@ -1280,6 +1333,12 @@
     if (lvotVmax && aorticVmax && !isNaN(lv) && !isNaN(av) && av > 0) return lv / av;
     return null;
   };
+  // MVA (PHT): Hatle's PHT-based estimate, MVA = 220 / PHT.
+  const calculateMVAPht = (mvPht, lang) => {
+    const p = parseNumber(mvPht, lang);
+    if (mvPht && !isNaN(p) && p > 0) return 220 / p;
+    return null;
+  };
 
   // ---- severity grading ----
   // Grading bands transcribed from Echo checklist.xlsx.
@@ -1301,6 +1360,10 @@
     trRegVol: v => v < 30 ? "mild" : v < 45 ? "moderate" : v < 60 ? "severe" : v < 75 ? "massive" : "torrential",
     ava: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
     avai: v => v > 0.85 ? "mild" : v > 0.6 ? "moderate" : "severe",
+    // Same cutoffs as AVA (>1.5 mild, 1.0–1.5 moderate, <1.0 severe) —
+    // per the mitral stenosis severity table, not a reuse of the AS bands.
+    mvaVti: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
+    mvaPht: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
     dviVti: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
     dviVmax: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
     // Only a single cutoff is defined for this metric (per user direction):
@@ -1404,6 +1467,18 @@
           "AT/ET is a risk marker. In high-gradient severe AS with preserved EF, AT/ET >0.35 predicted higher mortality rather than defining the severity. The values is lowered by high systolic blood pressure and by significant AR, and raised by low flow and reduced LV function.",
         ],
       },
+      ms: {
+        title: "Mitral Stenosis",
+        headers: ["Parameter", "Mild", "Moderate", "Severe"],
+        rows: [
+          ["Mean gradient (mmHg)", "<5", "5–10", ">10"],
+          ["PHT (ms)", "71–139", "140–219", "≥220"],
+          ["MVA (cm²)", ">1.5", "1.5–1.0", "<1.0"],
+        ],
+        notes: [
+          "MVA <1.5 cm² is already considered clinically significant, even though this table grades it as mild.",
+        ],
+      },
     },
     hu: {
       mr: {
@@ -1487,6 +1562,18 @@
           "Az AT/ET risk prediktor. High grade súlyos AS-ben megtartott EF mellett a 0,35 feletti AT/ET magasabb mortalitást jelzett előre nem a súlyosságot definiálja. Csökkenti a magas szisztolés vérnyomás és a jelentős AR, növeli az alacsony flow és a csökkent bal kamrai funkció.",
         ],
       },
+      ms: {
+        title: "Mitrális stenosis",
+        headers: ["Paraméter", "Enyhe", "Közepes", "Súlyos"],
+        rows: [
+          ["Átlag grádiens (Hgmm)", "<5", "5–10", ">10"],
+          ["PHT (ms)", "71–139", "140–219", "≥220"],
+          ["MVA (cm²)", ">1,5", "1,5–1,0", "<1,0"],
+        ],
+        notes: [
+          "Az 1,5 cm² alatti MVA már klinikailag szignifikánsnak számít, annak ellenére, hogy ez a táblázat enyhének minősíti.",
+        ],
+      },
     },
   };
 
@@ -1512,12 +1599,14 @@
       ar: "Aortic regurgitation severity reference",
       tr: "Tricuspid regurgitation severity reference",
       as: "Aortic stenosis severity reference",
+      ms: "Mitral stenosis severity reference",
     },
     hu: {
       mr: "Mitrális regurgitáció súlyossági referencia",
       ar: "Aorta regurgitáció súlyossági referencia",
       tr: "Tricuspidalis regurgitáció súlyossági referencia",
       as: "Aorta stenosis súlyossági referencia",
+      ms: "Mitrális stenosis súlyossági referencia",
     },
   };
   let currentInfoTopic = null;
@@ -2212,7 +2301,7 @@
   let lastResults = {};
   const fieldNames = [
     "weight","height","bsaManual","heartRate",
-    "mrPisaRadius","mrAliasingVelocity","mrVmax","mrVti","mvVtiPw",
+    "mrPisaRadius","mrAliasingVelocity","mrVmax","mrVti","mvVtiPw","mvVtiCw","mvPht",
     "arPisaRadius","arAliasingVelocity","arVmax","arVti",
     "trPisaRadius","trAliasingVelocity","trVmax","trVti",
     "lvotDiam","lvotVti","lvotVmax","aorticVmax","meanGradient","aorticVti"
@@ -2356,6 +2445,8 @@
       const r = parseFloat(s.mvVtiPw) / parseFloat(s.lvotVti);
       if (!isNaN(r)) mvVtiLvotVti = r.toFixed(2);
     }
+    const mvaVti = calculateAVA(s.lvotDiam, s.lvotVti, s.mvVtiCw, lang);
+    const mvaPht = calculateMVAPht(s.mvPht, lang);
 
     const t = translations[lang];
     const rows = [
@@ -2373,6 +2464,8 @@
       ["dviVti", dviVti, ""],
       ["dviVmax", dviVmax, ""],
       ["mvVtiLvotVti", mvVtiLvotVti === null ? null : parseFloat(mvVtiLvotVti.replace(",", ".")), ""],
+      ["mvaVti", mvaVti, "cm²"],
+      ["mvaPht", mvaPht, "cm²"],
       ["sv", sv, "ml"],
       ["svi", svi, "ml/m²"],
       ["cardiacOutput", cardiacOutput, "l/min"],
@@ -2398,7 +2491,8 @@
     $("#resultsCard").hidden = !any;
 
     lastResults = { bsa, mrEro, mrRegVol, mrRegFraction, arEro, arRegVol, arRegFraction,
-      trEro, trRegVol, sv, svi, cardiacOutput, cardiacIndex, ava, avai, dviVti, dviVmax, mvVtiLvotVti };
+      trEro, trRegVol, sv, svi, cardiacOutput, cardiacIndex, ava, avai, dviVti, dviVmax, mvVtiLvotVti,
+      mvaVti, mvaPht };
   }
 
   // ---- report text for "Copy to Report" ----
@@ -2456,6 +2550,16 @@
     blocks.push(pisaLine(t, lang, t.mrPisaGroup, t.mrEro, t.mrRegVol, t.mrRegFraction,
       s.mrPisaRadius, s.mrVmax, s.mrVti, s.mrAliasingVelocity,
       lastResults.mrEro, lastResults.mrRegVol, lastResults.mrRegFraction));
+
+    // Mitral Stenosis — raw inputs echoed, then whichever MVA(s) computed
+    const msParts = [];
+    const mvVtiCw = rawInput(s.mvVtiCw, lang);
+    if (mvVtiCw !== null) msParts.push(`${t.mvVtiCw}: ${mvVtiCw} cm`);
+    const mvPht = rawInput(s.mvPht, lang);
+    if (mvPht !== null) msParts.push(`${t.mvPht}: ${mvPht} ms`);
+    if (lastResults.mvaVti !== null) msParts.push(`${t.mvaVti}: ${fmt(lastResults.mvaVti)} cm²`);
+    if (lastResults.mvaPht !== null) msParts.push(`${t.mvaPht}: ${fmt(lastResults.mvaPht)} cm²`);
+    blocks.push(msParts.length ? `${t.mitralStenosisGroup}: ${msParts.join("; ")}` : null);
 
     // LVOT / AV / AVA / DVI block — one line per item, no blank lines between them
     const lvotLines = [];
