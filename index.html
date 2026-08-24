@@ -2612,14 +2612,20 @@
     });
   });
 
+  // In a .head-row layout the button's sibling is the info button, not the
+  // collapsible body — the body follows the whole .head-row instead.
+  function setCardExpanded(btn, expanded) {
+    btn.setAttribute("aria-expanded", String(expanded));
+    (btn.closest(".head-row") || btn).nextElementSibling.hidden = !expanded;
+  }
   $$(".card-header").forEach(btn => {
+    // Recorded so "Clear All" can restore each card/subgroup to how it
+    // shipped (main cards collapsed, MR PISA/MV VTI(PW)/LVOT/AV expanded,
+    // Mitral Stenosis/AR PISA collapsed) instead of leaving whatever the
+    // user happened to have open.
+    btn.dataset.defaultExpanded = btn.getAttribute("aria-expanded");
     btn.addEventListener("click", () => {
-      const expanded = btn.getAttribute("aria-expanded") === "true";
-      btn.setAttribute("aria-expanded", String(!expanded));
-      // In a .head-row layout the button's sibling is the info button, not
-      // the collapsible body — the body follows the whole .head-row instead.
-      const body = (btn.closest(".head-row") || btn).nextElementSibling;
-      body.hidden = expanded;
+      setCardExpanded(btn, btn.getAttribute("aria-expanded") !== "true");
     });
   });
   // Standalone chevrons (moved outside the button in .head-row layouts so
@@ -2698,6 +2704,7 @@
     fieldNames.forEach(f => state[f] = "");
     state.bsaManualValue = "";
     $$("input[data-field]").forEach(i => { i.value = ""; });
+    $$(".card-header").forEach(btn => setCardExpanded(btn, btn.dataset.defaultExpanded === "true"));
     computeResults();
   });
 
@@ -2880,7 +2887,13 @@
       s.trPisaRadius, s.trVmax, s.trVti, s.trAliasingVelocity,
       lastResults.trEro, lastResults.trRegVol, null));
 
-    return blocks.filter(b => b !== null).join("\n\n");
+    // The user's reporting software can't render superscript characters, so
+    // "cm²" etc. would show up as a mangled glyph or drop the exponent
+    // entirely — replace with a plain "2" here, at the last possible point,
+    // rather than hunting down every unit string above (and every one added
+    // later). Only the clipboard/report text is affected; on-screen results
+    // keep the superscript.
+    return blocks.filter(b => b !== null).join("\n\n").replace(/²/g, "2");
   }
 
   function flashCopyButton(message) {
