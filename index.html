@@ -1252,7 +1252,7 @@
       tricuspidValveGroup: "Tricuspid Valve", trPisaGroup: "TR PISA",
       pisaRadius: "PISA radius", aliasingVelocity: "Aliasing velocity", vmax: "Vmax", vti: "VTI",
       lvotDiam: "LVOT diameter", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
-      aorticVmax: "Vmax", meanGradient: "Mean gradient", aorticVti: "VTI", optional: "optional",
+      aorticVmax: "AV Vmax", meanGradient: "Mean gradient", aorticVti: "AV VTI", optional: "optional",
       mrEro: "MR ERO", mrRegVol: "MR Reg. vol.", mrRegFraction: "MR Reg. fraction",
       arEro: "AR ERO", arRegVol: "AR Reg. vol.", arRegFraction: "AR Reg. fraction",
       trEro: "TR ERO", trRegVol: "TR Reg. vol.",
@@ -1275,7 +1275,7 @@
       tricuspidValveGroup: "Tricuspidalis billentyű", trPisaGroup: "TR PISA",
       pisaRadius: "PISA radius", aliasingVelocity: "Aliasing sebesség", vmax: "Vmax", vti: "VTI",
       lvotDiam: "LVOT átmérő", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
-      aorticVmax: "Vmax", meanGradient: "Átlag gradiens", aorticVti: "VTI", optional: "opcionális",
+      aorticVmax: "AV Vmax", meanGradient: "Átlag gradiens", aorticVti: "AV VTI", optional: "opcionális",
       mrEro: "MR ERO", mrRegVol: "MR Reg. volumen", mrRegFraction: "MR Reg. frakció",
       arEro: "AR ERO", arRegVol: "AR Reg. volumen", arRegFraction: "AR Reg. frakció",
       trEro: "TR ERO", trRegVol: "TR Reg. volumen",
@@ -2856,7 +2856,7 @@
     // LVOT / AV / AVA / DVI block — one line per item, no blank lines between them
     const lvotLines = [];
     const lvotDiam = rawInput(s.lvotDiam, lang);
-    if (lvotDiam !== null) lvotLines.push(`${t.lvotDiam}: ${lvotDiam} mm`);
+    if (lvotDiam !== null) lvotLines.push(`LVOT Diam: ${lvotDiam} mm`);
     const lvotVti = rawInput(s.lvotVti, lang);
     if (lvotVti !== null) lvotLines.push(`${t.lvotVti}: ${lvotVti} cm`);
     const avVti = rawInput(s.aorticVti, lang);
