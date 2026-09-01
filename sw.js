@@ -1,7 +1,7 @@
 // Bump this version string whenever ANY app file changes (index.html, manifest.json,
 // icons, or this file itself). Cache-first means visitors keep the old version until
 // the cache name changes, so a stale CACHE constant = a stuck app.
-const CACHE = 'echo-calc-v4.10';
+const CACHE = 'echo-calc-v4.11';
 
 const PRECACHE_URLS = [
   './',
@@ -9,6 +9,13 @@ const PRECACHE_URLS = [
   './styles.css',
   './wiki-data.js',
   './app.js',
+  // Each wiki topic's body (see wiki-topics/ and loadWikiTopicBody() in
+  // app.js) is loaded on demand rather than up front, but still has to be
+  // listed here — precaching still downloads it during install/update, so
+  // it works offline the moment a topic is first tapped, not only after a
+  // successful online fetch. A new topic file goes here too.
+  './wiki-topics/constrictive-pericarditis.js',
+  './wiki-topics/pisa-method.js',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',

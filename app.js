@@ -1,7 +1,8 @@
 // Echo Calculator: calculator/state/UI logic. Split out of index.html;
-// wiki content (wikiCategories, wikiTopics, figure builders) lives in
-// wiki-data.js, loaded before this file (see index.html) since the wiki
-// render/routing functions below reference wikiTopics/wikiCategories.
+// wiki topic metadata (wikiCategories, wikiTopics) lives in wiki-data.js,
+// loaded before this file (see index.html) since the wiki render/routing
+// functions below reference it. A topic's body (and the figures it embeds)
+// is loaded on demand from wiki-topics/<id>.js — see loadWikiTopicBody().
 
 const translations = {
   en: {
@@ -459,6 +460,7 @@ const uiStrings = {
     disclaimer: "Reference summary — not a substitute for clinical judgement or current guidelines.",
     atMachine: "At the machine", card: "Card",
     searchPlaceholder: "Search topics", noResults: "No matching topics.",
+    wikiBodyLoading: "Loading…", wikiBodyLoadFailed: "Couldn't load this topic — check your connection and try again.",
   },
   hu: {
     notes: "Megjegyzések", close: "Bezárás", back: "Vissza",
@@ -466,6 +468,7 @@ const uiStrings = {
     disclaimer: "Referencia-összefoglaló — nem helyettesíti a klinikai megítélést vagy az aktuális irányelveket.",
     atMachine: "A gép mellett", card: "Kártya",
     searchPlaceholder: "Témák keresése", noResults: "Nincs találat.",
+    wikiBodyLoading: "Betöltés…", wikiBodyLoadFailed: "Nem sikerült betölteni ezt a témát — ellenőrizd a kapcsolatot, és próbáld újra.",
   },
 };
 const infoAriaLabels = {
@@ -577,6 +580,36 @@ function refreshInfoLanguage() {
 // Moved to wiki-data.js, loaded before this script (see index.html). Add
 // new topics there.
 
+// A topic's body (prose + figures — the heavy part) loads on demand from
+// wiki-topics/<id>.js rather than up front with everything else, so the
+// app doesn't have to download and parse every topic's full HTML on every
+// launch as the wiki grows. That file is still listed in sw.js
+// PRECACHE_URLS, so it's already on the phone (downloaded during
+// install/update, same as any other app file) by the time this runs —
+// this only defers *parsing it into the page*, not the download, so it
+// works the same offline as everything else. Each script registers itself
+// into window.wikiTopicBodies[id] = { en, hu } on load; cached here after
+// the first load so re-opening a topic doesn't re-inject the script tag.
+const wikiTopicBodyPromises = {};
+function loadWikiTopicBody(id) {
+  if (window.wikiTopicBodies && window.wikiTopicBodies[id]) {
+    return Promise.resolve(window.wikiTopicBodies[id]);
+  }
+  if (wikiTopicBodyPromises[id]) return wikiTopicBodyPromises[id];
+  wikiTopicBodyPromises[id] = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = `./wiki-topics/${id}.js`;
+    script.onload = () => {
+      const body = window.wikiTopicBodies && window.wikiTopicBodies[id];
+      if (body) { auditTopicBody(id, body); resolve(body); }
+      else reject(new Error(`wiki-topics/${id}.js loaded but didn't register a body`));
+    };
+    script.onerror = () => reject(new Error(`Failed to load wiki-topics/${id}.js`));
+    document.head.appendChild(script);
+  });
+  return wikiTopicBodyPromises[id];
+}
+
 let currentWikiTopic = null;
 let wikiSearchQuery = "";
 // Accent- and case-insensitive fold, e.g. "billentyu" matches "Billentyűk".
@@ -593,9 +626,14 @@ function wikiTopicMatchesQuery(topic, foldedQuery) {
   if (kw && kw.some(k => foldWikiText(k).includes(foldedQuery))) return true;
   const summary = topic.summary && topic.summary[lang];
   if (summary && summary.some(line => foldWikiText(line).includes(foldedQuery))) return true;
-  // Body is raw HTML — strip tags before folding so markup never
-  // accidentally matches (or blocks) a query.
-  const body = topic.body && topic.body[lang];
+  // Body text isn't loaded for every topic up front any more (see
+  // loadWikiTopicBody) — a topic opened earlier this session still gets
+  // its body searched (strip tags before folding so markup never
+  // accidentally matches), but one never opened only matches on
+  // title/keywords/summary above. Give a topic thorough `keywords` to
+  // compensate for anything that only appears in its body prose.
+  const loadedBody = window.wikiTopicBodies && window.wikiTopicBodies[topic.id];
+  const body = loadedBody && loadedBody[lang];
   if (body && foldWikiText(body.replace(/<[^>]*>/g, " ")).includes(foldedQuery)) return true;
   return false;
 }
@@ -690,6 +728,13 @@ function renderWikiSources(topic, lang) {
     </div>`;
 }
 
+// Cards have no body at all — nothing to load, renders synchronously like
+// before. "deep" topics render summary/table/sources immediately (all
+// eager metadata) with a loading placeholder standing in for the body,
+// then swap the body in once wiki-topics/<id>.js loads. currentWikiTopic
+// is re-checked after the async load resolves — if the user has since
+// navigated to a different topic or closed the wiki, the now-stale result
+// is dropped instead of overwriting whatever's on screen.
 function renderWikiTopic(id) {
   const topic = wikiTopics.find(t => t.id === id);
   if (!topic) { renderWikiList(); return; }
@@ -698,12 +743,27 @@ function renderWikiTopic(id) {
   $("#wikiSearchRow").hidden = true;
   const summaryHtml = renderWikiSummary(topic, lang);
   const tableHtml = topic.table ? buildSeverityTable(topic.table) : "";
-  // Cards omit `body` entirely — guard the access rather than assume it.
-  const bodyHtml = (topic.kind !== "card" && topic.body)
-    ? `<div class="wiki-body">${topic.body[lang]}</div>`
-    : "";
-  $("#wikiContent").innerHTML = `${summaryHtml}${tableHtml}${bodyHtml}${renderWikiSources(topic, lang)}`;
+  const sourcesHtml = renderWikiSources(topic, lang);
+
+  if (topic.kind === "card") {
+    $("#wikiContent").innerHTML = `${summaryHtml}${tableHtml}${sourcesHtml}`;
+    $("#wikiContent").scrollTop = 0;
+    return;
+  }
+
+  const t = uiStrings[lang];
+  $("#wikiContent").innerHTML = `${summaryHtml}${tableHtml}<div class="wiki-empty">${t.wikiBodyLoading}</div>${sourcesHtml}`;
   $("#wikiContent").scrollTop = 0;
+  loadWikiTopicBody(id).then(body => {
+    if (currentWikiTopic !== id) return;
+    const bodyLang = state.language; // re-read: language may have changed while loading
+    $("#wikiContent").innerHTML = `${renderWikiSummary(topic, bodyLang)}${tableHtml}<div class="wiki-body">${body[bodyLang]}</div>${renderWikiSources(topic, bodyLang)}`;
+    $("#wikiContent").scrollTop = 0;
+  }).catch(err => {
+    console.error(err);
+    if (currentWikiTopic !== id) return;
+    $("#wikiContent").innerHTML = `${summaryHtml}${tableHtml}<div class="wiki-empty">${uiStrings[state.language].wikiBodyLoadFailed}</div>${sourcesHtml}`;
+  });
 }
 
 // ---- wiki routing ----

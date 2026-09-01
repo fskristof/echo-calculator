@@ -15,24 +15,38 @@ few files, loaded via plain `<link>`/`<script src>` tags — no bundler, no modu
 - `index.html` — markup only, plus a per-field-group `data-fields="..."` attribute (see "Field
   templates" below) instead of hand-written input rows.
 - `styles.css` — all styling (was an inline `<style>` block).
-- `wiki-data.js` — Echo Wiki content: `wikiCategories`, `wikiTopics`, and the inline-SVG figure
-  builders topics embed (`cpAlgorithmFigure`, `ventInterdependenceFigure`, `pisaFigure`). Pure data
-  plus render-to-HTML-string helpers, no DOM/state dependency. Loaded before `app.js`.
+- `wiki-data.js` — Echo Wiki topic *metadata*: `wikiCategories`, `wikiTopics` (id/category/title/
+  summary/keywords/sources — everything the list view and search need eagerly). Loaded before
+  `app.js`. Does **not** hold topic bodies — see `wiki-topics/` below.
+- `wiki-topics/<id>.js` — one file per "deep" wiki topic, holding its `body` HTML and any inline-SVG
+  figure builders it embeds. Loaded on demand only when that topic is opened (`loadWikiTopicBody()` in
+  `app.js`), not up front — keeps the eager page-load payload flat as the wiki grows. Still listed in
+  `sw.js` `PRECACHE_URLS` so it's downloaded during install/update and works offline like everything
+  else; "lazy" here means "not parsed into the page until opened," not "not on the phone yet." Each
+  file registers itself into `window.wikiTopicBodies[id] = { en, hu }` — see the comment above
+  `loadWikiTopicBody()`. "card"-kind topics have no body and no file here.
 - `app.js` — everything else: translations, calculation logic, severity grading, field templating,
-  app state, the Echo Wiki *rendering/routing* logic (search, `#wiki` hash routing — as opposed to
-  its data, which lives in `wiki-data.js`), report/clipboard building, and DOM event wiring.
+  app state, the Echo Wiki *rendering/routing* logic (search, `#wiki` hash routing, lazy body loading —
+  as opposed to the data itself, which lives in `wiki-data.js`/`wiki-topics/`), report/clipboard
+  building, and DOM event wiring.
 - `sw.js` — service worker for offline caching (cache-first for same-origin GET requests). Its
-  `PRECACHE_URLS` list must include every file above — a file missing from that list works online but
-  silently breaks for offline/installed users.
+  `PRECACHE_URLS` list must include every file above (`wiki-topics/*.js` included) — a file missing
+  from that list works online but silently breaks for offline/installed users.
 - `manifest.json` — PWA manifest (icons, theme colors, standalone display).
 - `icons/`, `Icon.png`, `constriction-diagram.png` — static image assets.
-- `jsconfig.json` — dev-only: lets `tsc` type-check the JSDoc annotations in `app.js`/`wiki-data.js`
-  (see "Running / testing changes"). Not loaded by the app; nothing here ships to the browser.
+- `jsconfig.json` — dev-only: lets `tsc` type-check the JSDoc annotations in `app.js`/`wiki-data.js`/
+  `wiki-topics/*.js` (see "Running / testing changes"). Not loaded by the app; nothing here ships to
+  the browser.
+- `global.d.ts` — dev-only: ambient type for `window.wikiTopicBodies`, used only by the `tsc` check
+  above. Not loaded by the app.
 
 `wiki-data.js` and `app.js` are both plain (non-module) top-level scripts, not IIFEs — they share one
 global scope by design (`wiki-data.js`'s `wikiTopics`/`wikiCategories` are read directly by `app.js`),
 so `wiki-data.js` must stay listed first in `index.html`. Don't wrap either in an IIFE or convert to
-`type="module"` without accounting for that.
+`type="module"` without accounting for that. Each `wiki-topics/<id>.js`, by contrast, *is* wrapped in
+its own IIFE (it's loaded independently, later, via a dynamically injected `<script>` tag) and reaches
+app.js only through the `window.wikiTopicBodies` registry — never rely on a topic file's own local
+`const`/`function` names being visible anywhere else.
 
 ## Running / testing changes
 
@@ -91,10 +105,18 @@ Organized top-to-bottom roughly as:
    before the `input[data-field]` listeners are wired up. To add a field: add it to `fieldDefs` *and*
    to `fieldNames`, then list it in the right container's `data-fields` attribute in `index.html`.
 5. **Echo Wiki rendering/routing** (`render*`/`open*`/`goWiki`/hash-routing functions in this file,
-   operating on the `wikiCategories`/`wikiTopics` data defined in `wiki-data.js`) — navigated via
+   operating on the `wikiCategories`/`wikiTopics` metadata defined in `wiki-data.js`) — navigated via
    `#wiki` / `#wiki/<topicId>` URL hashes and rendered into `#wikiOverlay`. Topics can cross-link to
-   `severityInfo` sections and to each other. `auditWikiTopics()` (in `wiki-data.js`) sanity-checks the
-   topic data at load time (e.g. catches EN/HU numeric drift) — check it after editing `wikiTopics`.
+   `severityInfo` sections and to each other. `renderWikiTopic()` renders summary/table/sources
+   immediately (eager metadata) with a loading placeholder for the body, then calls
+   `loadWikiTopicBody()` to fetch `wiki-topics/<id>.js` on demand and swaps the body in once it
+   resolves — re-checking `currentWikiTopic` first, since the user may have navigated away while it
+   loaded. `wikiTopicMatchesQuery()` can only search a topic's body text if it's already been loaded
+   this session (see the comment above it in `wiki-data.js`); give a topic thorough `keywords` to
+   compensate. `auditWikiTopics()` (in `wiki-data.js`) sanity-checks topic metadata at load time (e.g.
+   summary EN/HU line-count parity); `auditTopicBody()` does the same for a topic's body (EN/HU
+   numeric drift), called from `loadWikiTopicBody()` once a body loads, since bodies aren't all
+   available up front any more.
 6. **App state** — a single `state` object (current language, BSA-entry mode, and one entry per input
    field in `fieldNames`) plus `lastResults` (a snapshot of the last computed results, reused by the
    "Copy to Report" feature so it doesn't recompute everything). There's no framework: inputs write
@@ -119,7 +141,11 @@ Organized top-to-bottom roughly as:
   guideline table) in a comment the way existing entries do, especially where cutoffs are ambiguous.
 - Keep language parity: every `data-t` key must exist in both `en` and `hu`, and every wiki topic's
   bilingual fields should be filled for both languages.
-- New wiki topics go in `wiki-data.js`, not `app.js`.
+- New wiki topics: metadata (id/category/title/summary/keywords/sources) goes in `wiki-data.js`; a
+  "deep" topic's `body` (and any figure builders it embeds) goes in a new `wiki-topics/<id>.js` — copy
+  the registration pattern (`window.wikiTopicBodies["<id>"] = { en, hu }` inside an IIFE) from an
+  existing file. Add the new file to `sw.js`'s `PRECACHE_URLS`, or it won't work offline until opened
+  once online. A "card"-kind topic needs no `wiki-topics/` file.
 - Bump the `sw.js` `CACHE` version on any shipped change to `index.html`, `styles.css`, `app.js`,
-  `wiki-data.js`, `manifest.json`, or `sw.js` itself — and if you add a new file like these, add it to
-  `sw.js`'s `PRECACHE_URLS` too.
+  `wiki-data.js`, a `wiki-topics/*.js` file, `manifest.json`, or `sw.js` itself — and if you add a new
+  file like these, add it to `sw.js`'s `PRECACHE_URLS` too.
