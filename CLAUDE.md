@@ -193,30 +193,51 @@ thing to check** — before assuming something is actually broken:
   `wiki-data.js`, a `wiki-topics/*.js` file, `manifest.json`, or `sw.js` itself — and if you add a new
   file like these, add it to `sw.js`'s `PRECACHE_URLS` too.
 
-## Prosthetic aortic valve — deferred work
+## Prosthetic aortic valve
 
-The "Prosthetic valve" toggle (AV subgroup) currently ships with one piece intentionally incomplete,
-by user direction — don't treat it as an oversight:
+The "Prosthetic valve" toggle (AV subgroup) and its full grading scheme (plan items 1-5) are all
+implemented, including the pieces that were originally deferred:
 
-- **EOA/EOAi have no severity badge.** `gradeFns` has no `eoa`/`eoai` entry on purpose (native-valve
-  AVA/AVAi cutoffs don't apply to a prosthetic valve). Add real prosthetic EOA/EOAi cutoffs to
-  `gradeFns` (and matching rows to a prosthetic-valve reference table, likely a new `severityInfo`
-  entry) once available.
+- **DVI, AT, AT/ET badges** (`gradeFns.dviProsthetic`/`.avAt`/`.avAtEt`) use Table 5's own SAVR
+  cutoffs (Zoghbi et al. 2024): DVI normal `>0.35`, possible stenosis `0.25-0.35`, stenosis `<0.25`;
+  AT normal `<80ms`, possible stenosis `80-100ms`, stenosis `>100ms`; AT/ET normal `<0.32`, possible
+  stenosis `0.32-0.37`, stenosis `>0.37`. AT only appears as its own graded `Calculated Results` row
+  (alongside the pre-existing AT/ET row) when `state.prostheticAV` is on — natively it's just an
+  input, never a result. These three-band cutoffs are a *different scale* than the 100ms/0.37
+  early/late split `calculateAvVerdict()` uses internally (Figure 13 in the same guideline) — the two
+  features draw on different tables in the source and are graded independently; don't try to unify
+  them.
+- **EOA** (`gradeEoaAgainstReference()`) is graded dynamically against the *specific selected valve's*
+  own reference EOA, not a static `gradeFns` entry: within 1 SD of the reference mean is normal, more
+  than 1 SD below is possible stenosis, more than 2 SD below is stenosis (Table 5's own SAVR
+  cutoffs — an EOA *above* reference+1 SD is still normal). This is why `prosthetic-data/aortic-
+  valves.js`'s "mean ± SD" display strings now also get parsed into real numbers (`parseMeanSd()`),
+  not just shown as-is — see the picker paragraph below for why this now has to feed back into
+  calculation, contradicting how it was originally scoped.
+- **EOAi** (`gradeEoaiPPM()`) is graded per Table 7's patient-prosthesis-mismatch criteria, which have
+  a *different* cutoff pair depending on obesity: BMI `>= 30 kg/m²` uses normal `>0.70`/moderate
+  `0.56-0.70`/severe `<=0.55` (cm²/m²); BMI `< 30` uses `>0.85`/`0.66-0.85`/`<=0.65`. BMI itself
+  (`calculateBMI()`) is computed in the background from weight/height — *not* from BSA, since BSA can
+  come from a manually entered value instead (`state.bsaManualMode`) with no real weight/height behind
+  it, but BMI always needs the real numbers.
 
-DVI's prosthetic-valve cutoffs (`gradeFns.dviProsthetic`, a two-band normal/reduced scheme at 0.3,
-selected via the rows array's `gradeKey` 4th element in `computeResults()` when `state.prostheticAV`
-is on) are already implemented — that's the pattern to copy for the EOA/EOAi cutoffs above once
-they're available, if they turn out to need a different grading band count than the native ava/avai
-two-key swap did.
+Because EOA/EOAi grades aren't static `gradeFns[key](value)` lookups, the `rows` array in
+`computeResults()` gained a 5th tuple element (`precomputedGrade`) that, when not `undefined`,
+overrides the `gradeFns` lookup entirely for that row — `undefined` (the default) falls through to the
+normal `gradeFns[gradeKey || key](numeric)` path unchanged. This is the pattern to copy for any future
+badge whose grade depends on more than just its own numeric value.
 
-The valve type/size picker and normal-value display (plan items 4-5) are also implemented: a
-mechanical/biological switch (`#valveCategoryToggle`) filters a full-screen searchable list
-(`#valveOverlay`, `openValvePicker()`/`renderValvePickerList()` in `app.js`) built from
-`prosthetic-data/aortic-valves.js`; picking a valve populates a size `<select>`
-(`updateValveSizeOptions()`), and picking a size shows that valve+size's normal Peak/Mean gradient,
-EOA, and DVI (where the source table has them) via `renderValveReference()`. This is a **reference
-lookup only** — it never feeds into the AVA/EOA/DVI/AT-ET calculations above; changing category or
-valve clears the current selection rather than trying to reconcile it.
+The valve type/size picker and normal-value display (plan items 4-5): a mechanical/biological switch
+(`#valveCategoryToggle`) filters a full-screen searchable list (`#valveOverlay`,
+`openValvePicker()`/`renderValvePickerList()` in `app.js`) built from `prosthetic-data/aortic-
+valves.js`; picking a valve populates a size `<select>` (`updateValveSizeOptions()`), and picking a
+size shows that valve+size's normal Peak/Mean gradient, EOA, and DVI (where the source table has them)
+via `renderValveReference()`. **This is no longer reference-lookup-only** — as of the EOA grading
+above, the selection directly feeds `gradeEoaAgainstReference()`, so `selectProstheticValve()`, the
+`#valveSizeSelect` `change` handler, and the `#valveCategoryToggle` `change` handler all now call
+`computeResults()` themselves (not just the reference-card render) so a badge appears/updates/clears
+immediately on a pick, without waiting for an unrelated input event. Changing category or valve still
+clears the current selection rather than trying to reconcile it.
 
 **Data-quality note**: `prosthetic-data/aortic-valves.js`'s header comment lists every valve whose
 mechanical/biological `category` was *inferred* from general knowledge rather than read directly off
@@ -243,12 +264,12 @@ diagram's literal reading:
 - **Not gated on Vmax > 3 m/s** (the diagram's own entry condition) — a reduced LV EF can make that
   threshold too low, and most users won't enter AV Vmax anyway. Instead it fires whenever AT is
   entered and both AT/ET and DVI are calculable, regardless of Vmax.
-- **Jet contour (early vs. late peaking) uses OR, not AND**, between the AT and AT/ET criteria: early
-  if `AT < 100 OR AT/ET < 0.37`, otherwise late. This isn't just a looser threshold — it collapses
-  what the diagram leaves as an undefined third case (the two criteria disagreeing) into a clean
-  two-way split, since "late" only holds when *neither* early-criterion is true (i.e. AT >= 100 AND
-  AT/ET >= 0.37, satisfying the late condition via De Morgan's law). See the comment above
-  `calculateAvVerdict` for the full reasoning.
+- **Jet contour (early vs. late peaking) uses OR, not AND**, between the AT and AT/ET criteria — and
+  it's the **late** side that's OR-based, not early: late if `AT > 100 OR AT/ET > 0.37`; early is the
+  complement (`AT <= 100 AND AT/ET <= 0.37`). This isn't just a looser threshold — it collapses what
+  the diagram leaves as an undefined third case (the two criteria disagreeing, e.g. AT < 100 but AT/ET
+  > 0.37) into a clean two-way split, since "early" only holds when *neither* late-criterion is true.
+  See the comment above `calculateAvVerdict` for the full reasoning.
 
 The diagram itself only defines 4 of the 6 (jet-contour x DVI-band) combinations; the other two
 (early + DVI < 0.25, late + DVI >= 0.30) render as "discordant" rather than guessing an outcome —
@@ -260,10 +281,23 @@ The source diagram itself is also reproduced as an inline-SVG figure (`avAlgorit
 app.js, same technique as the wiki's figure builders — themed via CSS custom properties, outcome
 boxes reusing the same `--grade-mild/-moderate/-severe` tokens as `.av-verdict` so the reference
 figure and the app's own computed verdict read as one color language), behind a new
-`severityInfo.avProsthetic` info topic (no `headers`/`rows` — a `figure` field instead; see the
-`info.figure` branch in `renderInfo()`). The EOAi split, "other possible causes" lists, and both
-footnotes are plain `notes` prose rather than packed into the SVG, for readability/translation. Its
-info button sits in `.switch-row .switch-label-group`, right after the "Prosthetic valve" label
-text — not at the row's far right like `.head-row .info-btn` elsewhere — via a dedicated
-`.switch-label-group` wrapper in `styles.css` that overrides `.info-btn`'s default `margin-left:
-auto`, the same way `.head-row .info-btn` does for its own context.
+`severityInfo.avProsthetic` info topic. The EOAi split, "other possible causes" lists, and footnotes
+are plain `notes` prose rather than packed into the SVG, for readability/translation. Its info button
+sits in `.switch-row .switch-label-group`, right after the "Prosthetic valve" label text — not at the
+row's far right like `.head-row .info-btn` elsewhere — via a dedicated `.switch-label-group` wrapper
+in `styles.css` that overrides `.info-btn`'s default `margin-left: auto`, the same way
+`.head-row .info-btn` does for its own context.
+
+`avProsthetic` also carries Table 5 (Doppler parameters of prosthetic aortic valves) and Table 6
+(hemodynamic criteria for structural valve deterioration) from the same guideline, as full
+`buildSeverityTable()` tables sandwiching the figure — Table 5 before it, Table 6 after — via two new
+`info` fields, `tableBeforeFigure`/`tableAfterFigure` (each an ordinary `{ heading?, headers, rows,
+... }` spec; `heading` is new too, rendered as its own `<h3>` since two tables need distinguishing
+where every other topic's single table just uses the topic's own title). `renderInfo()` composes
+`tableBeforeHtml + figureHtml + tableAfterHtml + tableHtml + notesHtml` — the last `tableHtml` (a bare
+`info.headers`/`.rows`) stays for every other topic, which has never needed more than one table. Table
+6 keeps its own real column headers ("Possible SVD" / "Significant SVD") rather than being forced into
+the Normal/Possible-stenosis/Stenosis 3-grade shape Table 5 uses — it's a serial-comparison table (has
+no "Normal" baseline row at all), and forcing that shape would misrepresent it. Table 7 (used for EOAi
+grading — see above) isn't reproduced as a table here, only referenced in a `notes` bullet, since nothing
+asked for it to be shown.

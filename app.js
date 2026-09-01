@@ -103,6 +103,24 @@ const calculateBSA = (weight, height, manualMode, manualValue, lang) => {
   if (weight && height && !isNaN(w) && !isNaN(h) && w > 0 && h > 0) return Math.sqrt((h * w) / 3600);
   return null;
 };
+// Body mass index, needed for the prosthetic-AV EOAi grading (Table 7 of
+// the same guideline has a separate BMI < 30 / >= 30 kg/m² cutoff pair —
+// see gradeEoaiPPM below). Always computed from actual weight/height,
+// unlike BSA above, which can instead come from a manually entered value.
+/**
+ * @param {string} weight
+ * @param {string} height
+ * @param {string} lang
+ * @returns {number | null}
+ */
+const calculateBMI = (weight, height, lang) => {
+  const w = parseNumber(weight, lang), h = parseNumber(height, lang);
+  if (weight && height && !isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
+    const hM = h / 100;
+    return w / (hM * hM);
+  }
+  return null;
+};
 /**
  * @param {string} pisaRadius
  * @param {string} aliasing
@@ -253,13 +271,14 @@ const calculateAtEt = (at, et, lang) => {
 //
 // Jet contour (early vs. late peaking): the source diagram draws this as
 // AT < 100ms AND AT/ET < 0.37 for "early," AT > 100ms AND AT/ET > 0.37 for
-// "late" — but per user direction this is OR, not AND: early if EITHER
-// criterion says early. This isn't just a looser threshold — it collapses
-// what would otherwise be an undefined third case (the two criteria
-// disagreeing) into a clean two-way split: "late" only when NEITHER
-// early-criterion holds, i.e. AT >= 100 AND AT/ET >= 0.37 (satisfying the
-// late condition too, via De Morgan's law). So every AT/AT-ET pair lands
-// in exactly one contour, with no leftover ambiguous case at this step.
+// "late" — but per user direction this is OR, not AND, and it's "late"
+// that's the OR-based side: late if EITHER AT > 100 OR AT/ET > 0.37; early
+// is the complement (AT <= 100 AND AT/ET <= 0.37). This isn't just a
+// looser threshold — it collapses what would otherwise be an undefined
+// third case (the two criteria disagreeing, e.g. AT < 100 but AT/ET >
+// 0.37) into a clean two-way split, since "early" only holds when
+// *neither* late-criterion is true. So every AT/AT-ET pair lands in
+// exactly one contour, with no leftover ambiguous case at this step.
 //
 // The diagram itself only draws four of the six (contour x DVI-band)
 // combinations — early+>=0.30 (normal), early-or-late+0.25-0.29 (possible
@@ -284,7 +303,8 @@ const calculateAvVerdict = (at, atEt, dviVti, dviVmax, eoai, lang) => {
   const dvi = dviVti !== null ? dviVti : dviVmax;
   if (dvi === null) return null;
 
-  const early = atNum < 100 || atEt < 0.37;
+  const late = atNum > 100 || atEt > 0.37;
+  const early = !late;
   let category;
   if (dvi >= 0.30) category = early ? "normal" : "discordant";
   else if (dvi >= 0.25) category = "possibleStenosis";
@@ -300,9 +320,11 @@ const calculateAvVerdict = (at, atEt, dviVti, dviVmax, eoai, lang) => {
 // Ambiguous range boundaries are resolved toward the higher-severity side.
 const gradeLabels = {
   en: { mild: "Mild", moderate: "Moderate", severe: "Severe", massive: "Massive", torrential: "Torrential",
-    normal: "Normal", reduced: "Reduced", mildlyReduced: "Mildly reduced", elevated: "Elevated" },
+    normal: "Normal", reduced: "Reduced", mildlyReduced: "Mildly reduced", elevated: "Elevated",
+    possibleStenosis: "Possible stenosis", stenosis: "Stenosis" },
   hu: { mild: "Enyhe", moderate: "Közepes", severe: "Súlyos", massive: "Masszív", torrential: "Torrentialis",
-    normal: "Normális", reduced: "Csökkent", mildlyReduced: "Enyhén csökkent", elevated: "Emelkedett" },
+    normal: "Normális", reduced: "Csökkent", mildlyReduced: "Enyhén csökkent", elevated: "Emelkedett",
+    possibleStenosis: "Lehetséges sztenózis", stenosis: "Sztenózis" },
 };
 const gradeFns = {
   mrEro: v => v < 0.2 ? "mild" : v <= 0.4 ? "moderate" : "severe",
@@ -321,19 +343,30 @@ const gradeFns = {
   mvaPht: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
   dviVti: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
   dviVmax: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
-  // Prosthetic AV, per user direction: DVI uses a different two-band
-  // scheme than the native-valve bands above — normal at/above 0.3,
-  // reduced below it (0.29 and down). Same cutoff for both the VTI and
-  // Vmax variant. Selected instead of dviVti/dviVmax via the rows array's
-  // gradeKey (4th tuple element) in computeResults when
-  // state.prostheticAV is on — see the comment there.
-  dviProsthetic: v => v < 0.3 ? "reduced" : "normal",
-  // Prosthetic AV, per user direction: AT/ET < 0.37 is abnormal (reduced),
-  // >= 0.37 is normal. No "eoa"/"eoai" entry here on purpose — EOA/EOAi
-  // (prosthetic AV) reuses the AVA/AVAi *values* but must not be graded
-  // with the native-valve ava/avai cutoffs above; real EOA/EOAi cutoffs
-  // are still to be defined, so they render with no severity badge for now.
-  avAtEt: v => v < 0.37 ? "reduced" : "normal",
+  // Prosthetic AV, Table 5 (Zoghbi et al. 2024) "SAVR" row for DVI: normal
+  // >0.35, possible stenosis 0.25-0.35, stenosis <0.25. Same cutoff for
+  // both the VTI and Vmax variant. Selected instead of dviVti/dviVmax via
+  // the rows array's gradeKey (4th tuple element) in computeResults when
+  // state.prostheticAV is on — see the comment there. Note this is a
+  // different scale than the >=0.30/0.25-0.29/<0.25 bands
+  // calculateAvVerdict() uses internally for the elevated-gradient
+  // algorithm (Figure 13 in the same guideline) — the two features draw on
+  // different tables and are graded independently.
+  dviProsthetic: v => v > 0.35 ? "normal" : v >= 0.25 ? "possibleStenosis" : "stenosis",
+  // Prosthetic AV, Table 5: acceleration time normal <80ms, possible
+  // stenosis 80-100ms, stenosis >100ms. Only shown (as its own graded
+  // result row) when state.prostheticAV is on — see computeResults.
+  avAt: v => v < 80 ? "normal" : v <= 100 ? "possibleStenosis" : "stenosis",
+  // Prosthetic AV, Table 5: AT/LV ejection time ratio normal <0.32,
+  // possible stenosis 0.32-0.37, stenosis >0.37. (Distinct from the
+  // <100ms/0.37 cutoffs calculateAvVerdict() uses for its early/late-peak
+  // split, per Figure 13 in the same guideline — see the dviProsthetic
+  // comment above for why these two features use different numbers.)
+  // No "eoa"/"eoai" entry here — those are graded dynamically
+  // (per-selected-valve SD bands from Table 5, and BMI-dependent Table 7
+  // cutoffs, respectively) via a precomputed grade passed straight into
+  // the rows array in computeResults, not a static gradeFns lookup.
+  avAtEt: v => v < 0.32 ? "normal" : v <= 0.37 ? "possibleStenosis" : "stenosis",
   // Only a single cutoff is defined for this metric (per user direction):
   // below 1 reads as mild, at/above 1 reads as severe, moderate is unused.
   mvVtiLvotVti: v => v < 1 ? "mild" : "severe",
@@ -341,6 +374,22 @@ const gradeFns = {
   cardiacOutput: v => v < 4 ? "reduced" : v <= 8 ? "normal" : "elevated",
   // Cardiac index: normal 2.5–4.2 l/min/m², <2.2 reduced, 2.2–2.5 mildly reduced (per user direction).
   cardiacIndex: v => v < 2.2 ? "reduced" : v < 2.5 ? "mildlyReduced" : v <= 4.2 ? "normal" : "elevated",
+};
+
+// Prosthetic AV EOAi grading, per Table 7 (Zoghbi et al. 2024) "Aortic
+// EOA*" row — patient-prosthesis mismatch criteria, with a separate cutoff
+// pair depending on obesity (BMI >= 30 kg/m² vs < 30). Not a static
+// gradeFns entry because it needs the patient's BMI as well as EOAi —
+// computeResults calls this directly and passes the result in as a
+// precomputed grade (rows array's 5th tuple element) instead.
+/**
+ * @param {number} avai
+ * @param {number} bmi
+ * @returns {string}
+ */
+const gradeEoaiPPM = (avai, bmi) => {
+  if (bmi >= 30) return avai > 0.70 ? "normal" : avai >= 0.56 ? "moderate" : "severe";
+  return avai > 0.85 ? "normal" : avai >= 0.66 ? "moderate" : "severe";
 };
 
 // ---- severity reference content ----
@@ -532,14 +581,38 @@ const severityInfo = {
     },
     avProsthetic: {
       title: "Elevated Prosthetic AV Gradient",
+      tableBeforeFigure: {
+        heading: "Table 5 — Doppler Parameters of Prosthetic Aortic Valves",
+        headers: ["Parameter", "Normal", "Possible stenosis", "Stenosis"],
+        rows: [
+          ["Jet velocity contour", "Triangular, early peaking", "Triangular to intermediate", "Rounded, symmetric"],
+          ["Acceleration time (ms)", "<80", "80–100", ">100"],
+          ["AT / LV ejection time ratio", "<0.32", "0.32–0.37", ">0.37"],
+          ["Peak velocity (m/s)", "<3", "3–4", "≥4"],
+          ["Mean gradient (mmHg) — SAVR", "<20", "20–34", "≥35"],
+          ["DVI — SAVR", ">0.35", "0.25–0.35", "<0.25"],
+          ["EOA — SAVR", "Reference EOA ± 1 SD", ">1 SD below reference EOA", ">2 SD below reference EOA"],
+        ],
+      },
       figure: avAlgorithmFigure("en"),
+      tableAfterFigure: {
+        heading: "Table 6 — Hemodynamic Criteria for Structural Valve Deterioration",
+        headers: ["Criterion", "Possible SVD", "Significant SVD"],
+        rows: [
+          ["Mean gradient", "Increase ≥10 mm Hg to a mean ≥20 mm Hg, with EOA decrease ≥0.3 cm² or ≥25% and/or DVI decrease ≥0.1 or ≥20% vs. baseline", "Increase ≥20 mm Hg to a mean ≥30 mm Hg, with EOA decrease ≥0.6 cm² or ≥50% and/or DVI decrease ≥0.2 or ≥40% vs. baseline"],
+          ["New/worsening regurgitation", "New or increased intraprosthetic AR, resulting in moderate or greater AR", "New or increased intraprosthetic AR of ≥2 grades, resulting in severe AR"],
+        ],
+      },
       notes: [
-        "Within a Normal result, EOAi further splits the finding: EOAi > 0.85 cm²/m² suggests a high-flow state (e.g. anemia, hyperthyroidism, an AV fistula); EOAi < 0.85 cm²/m² suggests patient-prosthesis mismatch (PPM).",
+        "Table 5 (above) requires at least one flow-dependent parameter (velocity, mean gradient) and one flow-independent parameter (EOA or DVI) to call significant stenosis; it only applies to SAVR — the guideline's separate TAVI change-from-baseline criteria aren't reproduced here since this app doesn't track serial studies.",
+        "This app's own Calculated Results grade DVI, AT, and AT/ET using Table 5's SAVR cutoffs directly; EOA is graded against the selected valve type/size's own reference EOA ± SD (see the picker above) using the same table's ±1 SD / ±2 SD bands, and only appears once a valve and size are picked.",
+        "EOAi is graded per Table 7 (below the algorithm), using patient-prosthesis-mismatch cutoffs that depend on BMI (calculated in the background from weight/height): >0.85 cm²/m² is normal under BMI 30 kg/m² (>0.70 cm²/m² at/above it), down to ≤0.65 cm²/m² (≤0.55 cm²/m² at/above BMI 30) for severe mismatch.",
+        "Within a Normal result on this app's own verdict below, EOAi further splits the finding: EOAi > 0.85 cm²/m² suggests a high-flow state (e.g. anemia, hyperthyroidism, an AV fistula); EOAi < 0.85 cm²/m² suggests patient-prosthesis mismatch (PPM).",
         "Possible stenosis — other possible causes: prosthesis-patient mismatch with a narrow LVOT, an incorrectly positioned LVOT PW Doppler sample volume, or underestimation of Vmax.",
         "Stenosis — other possible causes: valvular stenosis (e.g. thrombosis) or subvalvular stenosis.",
-        "Stenosis can also be confirmed by comparing the calculated EOA against the reference value for that valve's specific type and size — see the valve type/size picker above.",
         "Assessing mechanical valve motion: fluoroscopy (cine angiography), CT, or TEE. Determining the cause of stenosis: CT angiography, TEE, or cardiac MRI.",
-        "This app's own verdict (in Calculated Results, once AT/ET and DVI are available) doesn't require Vmax > 3 m/s to appear, and treats the jet as early-peaking if either AT < 100 ms or AT/ET < 0.37 holds, not only when both do.",
+        "This app's own verdict (in Calculated Results, once AT/ET and DVI are available) doesn't require Vmax > 3 m/s to appear, and treats the jet as late-peaking if either AT > 100 ms or AT/ET > 0.37 holds, not only when both do.",
+        "Table 6 (above, structural valve deterioration) compares serial studies rather than staging absolute severity, so it has no \"Normal\" column — a change below the \"Possible SVD\" thresholds simply isn't SVD. In combined stenosis and regurgitation, SVD may be present at lower thresholds than shown.",
       ],
     },
     ms: {
@@ -639,14 +712,38 @@ const severityInfo = {
     },
     avProsthetic: {
       title: "Emelkedett aorta műbillentyű grádiens",
+      tableBeforeFigure: {
+        heading: "5. táblázat — Aorta műbillentyűk Doppler paraméterei",
+        headers: ["Paraméter", "Normális", "Lehetséges sztenózis", "Sztenózis"],
+        rows: [
+          ["Jet sebességi kontúr", "Háromszög, korai csúcsú", "Háromszög-köztes", "Kerekített, szimmetrikus"],
+          ["Akcelerációs idő (ms)", "<80", "80–100", ">100"],
+          ["AT / bal kamrai ejekciós idő arány", "<0,32", "0,32–0,37", ">0,37"],
+          ["Csúcssebesség (m/s)", "<3", "3–4", "≥4"],
+          ["Átlag grádiens (Hgmm) — SAVR", "<20", "20–34", "≥35"],
+          ["DVI — SAVR", ">0,35", "0,25–0,35", "<0,25"],
+          ["EOA — SAVR", "Referencia EOA ± 1 SD", ">1 SD-vel a referencia EOA alatt", ">2 SD-vel a referencia EOA alatt"],
+        ],
+      },
       figure: avAlgorithmFigure("hu"),
+      tableAfterFigure: {
+        heading: "6. táblázat — A strukturális műbillentyű-degeneráció hemodinamikai kritériumai",
+        headers: ["Kritérium", "Lehetséges SVD", "Jelentős SVD"],
+        rows: [
+          ["Átlag grádiens", "≥10 Hgmm-es emelkedés ≥20 Hgmm-es átlag grádiensre, egyidejűleg ≥0,3 cm² vagy ≥25%-os EOA csökkenéssel és/vagy ≥0,1 vagy ≥20%-os DVI csökkenéssel a kiindulási értékhez képest", "≥20 Hgmm-es emelkedés ≥30 Hgmm-es átlag grádiensre, egyidejűleg ≥0,6 cm² vagy ≥50%-os EOA csökkenéssel és/vagy ≥0,2 vagy ≥40%-os DVI csökkenéssel a kiindulási értékhez képest"],
+          ["Új/súlyosbodó regurgitáció", "Új vagy fokozódó intraprosztetikus AR, közepes vagy súlyosabb AR-t eredményezve", "Új vagy ≥2 fokozattal fokozódó intraprosztetikus AR, súlyos AR-t eredményezve"],
+        ],
+      },
       notes: [
-        "Normál eredményen belül az EOAi tovább bontja a leletet: EOAi > 0,85 cm²/m² gyorsult keringésre (pl. anaemia, hyperthyreosis, AV fistula) utal; EOAi < 0,85 cm²/m² patient-prosthesis mismatch-re (PPM) utal.",
+        "Az 5. táblázat (fent) szerint a jelentős sztenózishoz legalább egy flow-függő paraméter (sebesség, átlag grádiens) és egy flow-független paraméter (EOA vagy DVI) szükséges; csak SAVR-ra vonatkozik — a guideline külön TAVI kiindulási-értékhez viszonyított kritériumait itt nem közöljük, mivel az alkalmazás nem követ soros vizsgálatokat.",
+        "Az alkalmazás saját Számított eredményei a DVI-t, az AT-t és az AT/ET-t az 5. táblázat SAVR határértékeivel értékelik; az EOA-t a kiválasztott műbillentyű típus/méret saját referencia EOA ± SD értékéhez viszonyítva (lásd a fenti választót), ugyanazon táblázat ±1 SD / ±2 SD sávjaival — és csak akkor jelenik meg, ha műbillentyű és méret is ki van választva.",
+        "Az EOAi értékelése a 7. táblázat (az algoritmus alatt) alapján történik, amely a patient-prosthesis mismatch határértékeit a BMI-től (háttérben, testsúlyból és testmagasságból számítva) teszi függővé: >0,85 cm²/m² normális 30 kg/m² alatti BMI mellett (>0,70 cm²/m² 30 kg/m² fölött), egészen ≤0,65 cm²/m²-ig (≤0,55 cm²/m² 30 kg/m² BMI fölött) súlyos mismatch esetén.",
+        "Normál eredményen belül az alábbi, alkalmazás által adott értékelésnél az EOAi tovább bontja a leletet: EOAi > 0,85 cm²/m² gyorsult keringésre (pl. anaemia, hyperthyreosis, AV fistula) utal; EOAi < 0,85 cm²/m² patient-prosthesis mismatch-re (PPM) utal.",
         "Lehetséges sztenózis — lehetséges egyéb okok: műbillentyű-sztenózis szűk LVOT-val, a LVOT PW Doppler helytelen pozíciója, vagy a Vmax alulbecslése.",
         "Sztenózis — lehetséges egyéb okok: valvuláris sztenózis (pl. trombózis) vagy szubvalvuláris sztenózis.",
-        "A sztenózis az EOA kiszámításával is igazolható, a műbillentyű típusának és méretének megfelelő referenciaértékhez viszonyítva — lásd a fenti billentyű típus/méret választót.",
         "Mechanikus műbillentyű mozgásának megítélése: fluoroszkópia (cine angiográfia), CT, vagy TEE. A sztenózis okának megállapítása: CT angiográfia, TEE, vagy szív MRI.",
-        "Az alkalmazás saját értékelése (a Számított eredmények között, amint az AT/ET és a DVI is rendelkezésre áll) nem követeli meg a Vmax > 3 m/s feltételt, és korai csúcsú jetnek tekinti, ha az AT < 100 ms VAGY az AT/ET < 0,37 teljesül — nem csak akkor, ha mindkettő.",
+        "Az alkalmazás saját értékelése (a Számított eredmények között, amint az AT/ET és a DVI is rendelkezésre áll) nem követeli meg a Vmax > 3 m/s feltételt, és késői csúcsú jetnek tekinti, ha az AT > 100 ms VAGY az AT/ET > 0,37 teljesül — nem csak akkor, ha mindkettő.",
+        "A 6. táblázat (fent, strukturális műbillentyű-degeneráció) soros vizsgálatokat hasonlít össze, nem abszolút súlyossági fokozatot állapít meg, ezért nincs \"Normális\" oszlopa — a „Lehetséges SVD” határérték alatti változás egyszerűen nem SVD. Kombinált sztenózis és regurgitáció esetén az SVD alacsonyabb határértékeknél is fennállhat.",
       ],
     },
     ms: {
@@ -753,15 +850,27 @@ function renderInfo(topicKey) {
   const info = severityInfo[state.language][topicKey];
   if (!info) return;
   $("#infoTitle").textContent = info.title;
-  // Most topics are a severity table; a few (e.g. avProsthetic) are a
-  // figure instead — buildSeverityTable() needs headers/rows, so only
-  // call it when they're actually present.
+  // Most topics are a single severity table (headers/rows straight on
+  // info); avProsthetic instead has a figure sandwiched between two
+  // tables (Table 5 before it, Table 6 after — Zoghbi et al. 2024), via
+  // tableBeforeFigure/tableAfterFigure. buildSeverityTable() needs
+  // headers/rows, so only call it when a given piece is actually present.
+  // An optional `heading` on tableBeforeFigure/tableAfterFigure (unlike
+  // buildSeverityTable's own spec fields) gets its own <h3> above the
+  // table, since two tables sandwiching one figure need distinguishing —
+  // a single top-level info.title isn't enough for both.
+  const tableBeforeHtml = info.tableBeforeFigure
+    ? (info.tableBeforeFigure.heading ? `<h3>${info.tableBeforeFigure.heading}</h3>` : "") + buildSeverityTable(info.tableBeforeFigure)
+    : "";
   const figureHtml = info.figure || "";
+  const tableAfterHtml = info.tableAfterFigure
+    ? (info.tableAfterFigure.heading ? `<h3>${info.tableAfterFigure.heading}</h3>` : "") + buildSeverityTable(info.tableAfterFigure)
+    : "";
   const tableHtml = info.headers ? buildSeverityTable(info) : "";
   const notesHtml = info.notes && info.notes.length
     ? `<div class="info-notes"><h3>${uiStrings[state.language].notes}</h3><ul>${info.notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
     : "";
-  $("#infoContent").innerHTML = figureHtml + tableHtml + notesHtml;
+  $("#infoContent").innerHTML = tableBeforeHtml + figureHtml + tableAfterHtml + tableHtml + notesHtml;
 }
 
 // Shared by both full-screen overlays (info + wiki), which are mutually
@@ -899,6 +1008,10 @@ function selectProstheticValve(name) {
   updateValveTypeButton();
   updateValveSizeOptions();
   renderValveReference();
+  // Picking a valve clears the size, and with it any EOA grade from the
+  // previous selection (gradeEoaAgainstReference) — re-render so a stale
+  // badge doesn't linger until the next unrelated input event.
+  computeResults();
 }
 function updateValveTypeButton() {
   const t = uiStrings[state.language];
@@ -929,6 +1042,43 @@ function renderValveReference() {
   if (sizeEntry.dvi) rows.push(`<li><strong>${t.valveDvi}:</strong> ${sizeEntry.dvi}</li>`);
   el.innerHTML = rows.length ? `<h3>${t.valveNormalValues}</h3><ul>${rows.join("")}</ul>` : "";
   el.hidden = rows.length === 0;
+}
+// Parses a "mean ± SD" display string (the format every numeric field in
+// prosthetic-data/aortic-valves.js is stored in) into actual numbers.
+// Needed for gradeEoaAgainstReference below — everywhere else these
+// strings are shown as-is (see renderValveReference above), never parsed.
+/**
+ * @param {string} str
+ * @returns {{ mean: number, sd: number } | null}
+ */
+function parseMeanSd(str) {
+  const m = /^\s*([\d.,]+)\s*±\s*([\d.,]+)\s*$/.exec(str || "");
+  if (!m) return null;
+  const mean = parseFloat(m[1].replace(",", "."));
+  const sd = parseFloat(m[2].replace(",", "."));
+  if (isNaN(mean) || isNaN(sd)) return null;
+  return { mean, sd };
+}
+// Prosthetic AV EOA grading, per Table 5 (Zoghbi et al. 2024) "SAVR" row:
+// normal within the selected valve/size's reference EOA ± 1 SD, possible
+// stenosis more than 1 SD below it, stenosis more than 2 SD below it (an
+// EOA *above* reference + 1 SD is still normal — a stenotic valve doesn't
+// open too well). Returns null when no valve+size is selected, or its
+// table has no EOA entry — computeResults then leaves the EOA row
+// ungraded, same as before this cutoff existed.
+/**
+ * @param {number} eoa
+ * @returns {string | null}
+ */
+function gradeEoaAgainstReference(eoa) {
+  const valve = (window.prostheticAorticValves || []).find(v => v.name === state.prostheticValveName);
+  const sizeEntry = valve && valve.sizes.find(s => s.size === state.prostheticValveSize);
+  const ref = sizeEntry && parseMeanSd(sizeEntry.eoa);
+  if (!ref) return null;
+  const belowMean = ref.mean - eoa;
+  if (belowMean <= ref.sd) return "normal";
+  if (belowMean <= 2 * ref.sd) return "possibleStenosis";
+  return "stenosis";
 }
 function refreshValvePickerLanguage() {
   updateValveTypeButton();
@@ -1365,6 +1515,9 @@ $("#valveCategoryToggle").addEventListener("change", (e) => {
   updateValveTypeButton();
   updateValveSizeOptions();
   renderValveReference();
+  // Clearing the selection can also clear an EOA grade that was based on
+  // it (gradeEoaAgainstReference) — re-render so the badge disappears too.
+  computeResults();
 });
 $("#valveTypeBtn").addEventListener("click", openValvePicker);
 $("#valveOverlayClose").addEventListener("click", closeValvePicker);
@@ -1375,6 +1528,11 @@ $("#valveSearchInput").addEventListener("input", (e) => {
 $("#valveSizeSelect").addEventListener("change", (e) => {
   state.prostheticValveSize = /** @type {HTMLSelectElement} */ (e.target).value;
   renderValveReference();
+  // The EOA badge (gradeEoaAgainstReference) depends on the selected
+  // valve+size, unlike the rest of this picker, which is display-only —
+  // so a size pick needs to re-run computeResults(), not just the
+  // reference-card render above.
+  computeResults();
 });
 
 $("#langToggle").addEventListener("click", () => {
@@ -1486,6 +1644,21 @@ function computeResults() {
   const dviVmax = calculateDVIVmax(s.lvotVmax, s.aorticVmax, lang);
   const avAtEt = s.prostheticAV ? calculateAtEt(s.avAt, s.avEt, lang) : null;
   const avVerdict = s.prostheticAV ? calculateAvVerdict(s.avAt, avAtEt, dviVti, dviVmax, avai, lang) : null;
+  // AT itself only becomes a graded row (Table 5 cutoffs, via gradeFns.avAt)
+  // in prosthetic mode — natively it's just an input, never a result.
+  let avAtNum = null;
+  if (s.prostheticAV && s.avAt) {
+    const n = parseNumber(s.avAt, lang);
+    if (!isNaN(n) && n > 0) avAtNum = n;
+  }
+  // EOA/EOAi grading is dynamic (per-valve SD bands / BMI-dependent Table 7
+  // cutoffs) rather than a static gradeFns lookup — see
+  // gradeEoaAgainstReference and gradeEoaiPPM. Both stay null (no badge)
+  // when the inputs they need (a selected valve+size, or weight+height)
+  // aren't available, same as before these cutoffs existed.
+  const eoaGrade = s.prostheticAV && ava !== null ? gradeEoaAgainstReference(ava) : null;
+  const bmi = s.prostheticAV ? calculateBMI(s.weight, s.height, lang) : null;
+  const eoaiGrade = s.prostheticAV && avai !== null && bmi !== null ? gradeEoaiPPM(avai, bmi) : null;
   let mvVtiLvotVti = null;
   if (s.mvVtiPw && s.lvotVti) {
     const r = parseFloat(s.mvVtiPw) / parseFloat(s.lvotVti);
@@ -1505,14 +1678,21 @@ function computeResults() {
     ["arRegFraction", arRegFraction, "%"],
     ["trEro", trEro, "cm²"],
     ["trRegVol", trRegVol, "ml"],
-    [s.prostheticAV ? "eoa" : "ava", ava, "cm²"],
-    [s.prostheticAV ? "eoai" : "avai", avai, "cm²/m²"],
+    // 5th tuple element (precomputed grade) overrides gradeFns entirely —
+    // see the rows.forEach loop below. Only prosthetic mode uses it, so
+    // it's undefined (falls through to the normal gradeFns lookup) for
+    // native ava/avai.
+    [s.prostheticAV ? "eoa" : "ava", ava, "cm²", undefined, s.prostheticAV ? eoaGrade : undefined],
+    [s.prostheticAV ? "eoai" : "avai", avai, "cm²/m²", undefined, s.prostheticAV ? eoaiGrade : undefined],
     // Label stays "DVI(VTI)"/"DVI(Vmax)" either way — only the grading
     // band changes for a prosthetic valve, via the 4th tuple element
     // (gradeKey), which the render loop below falls back to `key` for
     // every other row that doesn't need this split.
     ["dviVti", dviVti, "", s.prostheticAV ? "dviProsthetic" : "dviVti"],
     ["dviVmax", dviVmax, "", s.prostheticAV ? "dviProsthetic" : "dviVmax"],
+    // AT only appears as its own graded row in prosthetic mode (native AT
+    // has no severity cutoff of its own — see gradeFns.avAt).
+    ["avAt", avAtNum, "ms"],
     ["avAtEt", avAtEt, ""],
     ["mvVtiLvotVti", mvVtiLvotVti === null ? null : parseFloat(mvVtiLvotVti.replace(",", ".")), ""],
     ["mvaVti", mvaVti, "cm²"],
@@ -1526,7 +1706,7 @@ function computeResults() {
   const list = $("#resultsList");
   list.innerHTML = "";
   let any = false;
-  rows.forEach(([key, val, unit, gradeKey]) => {
+  rows.forEach(([key, val, unit, gradeKey, precomputedGrade]) => {
     if (val === null || val === undefined || (typeof val === "number" && isNaN(val))) return;
     any = true;
     const row = document.createElement("div");
@@ -1534,7 +1714,7 @@ function computeResults() {
     const numeric = typeof val === "number" ? val : parseFloat(val);
     const formatted = fmt(numeric);
     const gradeFn = gradeFns[gradeKey || key];
-    const grade = gradeFn ? gradeFn(numeric) : null;
+    const grade = precomputedGrade !== undefined ? precomputedGrade : (gradeFn ? gradeFn(numeric) : null);
     const badge = grade ? `<span class="grade grade-${grade}">${gradeLabels[lang][grade]}</span>` : "<span></span>";
     row.innerHTML = `<span class="label">${t[key]}</span>${badge}<span class="value">${formatted}${unit ? " " + unit : ""}</span>`;
     list.appendChild(row);

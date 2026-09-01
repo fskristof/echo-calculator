@@ -640,8 +640,8 @@ footer.note {
   white-space: nowrap;
 }
 .grade-mild, .grade-normal { background: var(--grade-mild-bg); color: var(--grade-mild-text); }
-.grade-moderate, .grade-mildlyReduced { background: var(--grade-moderate-bg); color: var(--grade-moderate-text); }
-.grade-severe, .grade-reduced { background: var(--grade-severe-bg); color: var(--grade-severe-text); }
+.grade-moderate, .grade-mildlyReduced, .grade-possibleStenosis { background: var(--grade-moderate-bg); color: var(--grade-moderate-text); }
+.grade-severe, .grade-reduced, .grade-stenosis { background: var(--grade-severe-bg); color: var(--grade-severe-text); }
 .grade-massive, .grade-torrential { background: var(--grade-extreme-bg); color: var(--grade-extreme-text); }
 .grade-elevated { background: var(--grade-elevated-bg); color: var(--grade-elevated-text); }
 
