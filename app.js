@@ -260,6 +260,13 @@ const gradeFns = {
   mvaPht: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
   dviVti: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
   dviVmax: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
+  // Prosthetic AV, per user direction: DVI uses a different two-band
+  // scheme than the native-valve bands above — normal at/above 0.3,
+  // reduced below it (0.29 and down). Same cutoff for both the VTI and
+  // Vmax variant. Selected instead of dviVti/dviVmax via the rows array's
+  // gradeKey (4th tuple element) in computeResults when
+  // state.prostheticAV is on — see the comment there.
+  dviProsthetic: v => v < 0.3 ? "reduced" : "normal",
   // Prosthetic AV, per user direction: AT/ET < 0.37 is abnormal (reduced),
   // >= 0.37 is normal. No "eoa"/"eoai" entry here on purpose — EOA/EOAi
   // (prosthetic AV) reuses the AVA/AVAi *values* but must not be graded
@@ -1155,8 +1162,12 @@ function computeResults() {
     ["trRegVol", trRegVol, "ml"],
     [s.prostheticAV ? "eoa" : "ava", ava, "cm²"],
     [s.prostheticAV ? "eoai" : "avai", avai, "cm²/m²"],
-    ["dviVti", dviVti, ""],
-    ["dviVmax", dviVmax, ""],
+    // Label stays "DVI(VTI)"/"DVI(Vmax)" either way — only the grading
+    // band changes for a prosthetic valve, via the 4th tuple element
+    // (gradeKey), which the render loop below falls back to `key` for
+    // every other row that doesn't need this split.
+    ["dviVti", dviVti, "", s.prostheticAV ? "dviProsthetic" : "dviVti"],
+    ["dviVmax", dviVmax, "", s.prostheticAV ? "dviProsthetic" : "dviVmax"],
     ["avAtEt", avAtEt, ""],
     ["mvVtiLvotVti", mvVtiLvotVti === null ? null : parseFloat(mvVtiLvotVti.replace(",", ".")), ""],
     ["mvaVti", mvaVti, "cm²"],
@@ -1170,14 +1181,14 @@ function computeResults() {
   const list = $("#resultsList");
   list.innerHTML = "";
   let any = false;
-  rows.forEach(([key, val, unit]) => {
+  rows.forEach(([key, val, unit, gradeKey]) => {
     if (val === null || val === undefined || (typeof val === "number" && isNaN(val))) return;
     any = true;
     const row = document.createElement("div");
     row.className = "result-row";
     const numeric = typeof val === "number" ? val : parseFloat(val);
     const formatted = fmt(numeric);
-    const gradeFn = gradeFns[key];
+    const gradeFn = gradeFns[gradeKey || key];
     const grade = gradeFn ? gradeFn(numeric) : null;
     const badge = grade ? `<span class="grade grade-${grade}">${gradeLabels[lang][grade]}</span>` : "<span></span>";
     row.innerHTML = `<span class="label">${t[key]}</span>${badge}<span class="value">${formatted}${unit ? " " + unit : ""}</span>`;

@@ -185,17 +185,19 @@ thing to check** — before assuming something is actually broken:
 
 ## Prosthetic aortic valve — deferred work
 
-The "Prosthetic valve" toggle (AV subgroup) currently ships with two pieces intentionally incomplete,
-both by user direction — don't treat either as an oversight:
+The "Prosthetic valve" toggle (AV subgroup) currently ships with one piece intentionally incomplete,
+by user direction — don't treat it as an oversight:
 
 - **EOA/EOAi have no severity badge.** `gradeFns` has no `eoa`/`eoai` entry on purpose (native-valve
   AVA/AVAi cutoffs don't apply to a prosthetic valve). Add real prosthetic EOA/EOAi cutoffs to
   `gradeFns` (and matching rows to a prosthetic-valve reference table, likely a new `severityInfo`
   entry) once available.
-- **DVI's existing cutoffs (`gradeFns.dviVti`/`.dviVmax`) are native-valve-only.** For a prosthetic
-  valve, DVI should grade "normal" at/above 0.3 and "reduced" below it (a two-band scheme, unlike the
-  native three-band one) — not yet implemented. When adding this, branch `computeResults()`'s DVI
-  grading on `state.prostheticAV` the same way the AVA/AVAi *label* (not value) is picked.
+
+DVI's prosthetic-valve cutoffs (`gradeFns.dviProsthetic`, a two-band normal/reduced scheme at 0.3,
+selected via the rows array's `gradeKey` 4th element in `computeResults()` when `state.prostheticAV`
+is on) are already implemented — that's the pattern to copy for the EOA/EOAi cutoffs above once
+they're available, if they turn out to need a different grading band count than the native ava/avai
+two-key swap did.
 
 Also still planned, not yet started: a valve type + size selector (populated from a guideline
 reference table) that, once both are picked, shows that specific valve's normal reference values.
