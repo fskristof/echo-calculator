@@ -1,0 +1,799 @@
+:root {
+  --bg: #F5F7FA;
+  --card: #FFFFFF;
+  --subtle-bg: #F9FAFB;
+  --input-bg: #F9FAFB;
+  --input-border: #E5E7EB;
+  --input-border-active: #007AFF;
+  --input-border-error: #EF4444;
+  --text-main: #1F2937;
+  --text-sub: #6B7280;
+  --text-placeholder: #9CA3AF;
+  --accent: #3B82F6;
+  --accent-text: #FFFFFF;
+  --result-bg: #F0F9FF;
+  --result-text: #1E40AF;
+  --danger: #EF4444;
+  --danger-text: #FFFFFF;
+  --shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --divider: #E5E7EB;
+  --grade-mild-bg: #DCFCE7;
+  --grade-mild-text: #166534;
+  --grade-moderate-bg: #FEF3C7;
+  --grade-moderate-text: #92400E;
+  --grade-severe-bg: #FEE2E2;
+  --grade-severe-text: #991B1B;
+  --grade-extreme-bg: #7F1D1D;
+  --grade-extreme-text: #FFFFFF;
+  --grade-elevated-bg: #DBEAFE;
+  --grade-elevated-text: #1E3A8A;
+}
+
+/* Light is the default and always what a fresh visit sees — dark only applies
+   when the user explicitly switches via the header toggle (persisted below). */
+html[data-theme="dark"] {
+  --bg: #0F1420;
+  --card: #171D2B;
+  --subtle-bg: #1E2536;
+  --input-bg: #1B2233;
+  --input-border: #2C3548;
+  --input-border-active: #4C9AFF;
+  --input-border-error: #F87171;
+  --text-main: #E7EAF2;
+  --text-sub: #93A0B8;
+  --text-placeholder: #5B6784;
+  --accent: #3B82F6;
+  --accent-text: #FFFFFF;
+  --result-bg: #16233D;
+  --result-text: #7FB2FF;
+  --danger: #F87171;
+  --danger-text: #1A0E0E;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  --divider: #26304A;
+  --grade-mild-bg: #14351F;
+  --grade-mild-text: #86EFAC;
+  --grade-moderate-bg: #3B2A08;
+  --grade-moderate-text: #FCD34D;
+  --grade-severe-bg: #3F1414;
+  --grade-severe-text: #FCA5A5;
+  --grade-extreme-bg: #7F1D1D;
+  --grade-extreme-text: #FFE4E6;
+  --grade-elevated-bg: #1E2F52;
+  --grade-elevated-text: #93C5FD;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+.phone {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+header.appbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* Safe-area inset lives on the sticky header itself (not a scrolled-away
+     ancestor) so its background stays full-bleed under the notch/status bar
+     at every scroll position while the title/buttons stay clear of it. */
+  padding: calc(16px + env(safe-area-inset-top)) 20px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--divider);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+header.appbar h1 {
+  /* Shrinks on narrow phones where 4 header buttons + the full title no
+     longer both fit at 26px — scales with viewport width instead of
+     wrapping onto a second line. */
+  font-size: clamp(18px, 5.4vw, 26px);
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lang-toggle {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  touch-action: manipulation;
+  user-select: none;
+}
+.lang-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--subtle-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  color: var(--text-main);
+}
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-toggle svg { width: 20px; height: 20px; }
+.theme-toggle .icon-moon { display: none; }
+html[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+html[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+/* ~30% wider than the other header icon buttons, per user direction */
+.wiki-btn { width: 52px; }
+
+main {
+  flex: 1;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  background: none;
+  border: none;
+  width: 100%;
+  padding: 4px 0;
+  font-family: inherit;
+  color: var(--text-main);
+}
+.card-header:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.card-header .title {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.title-note {
+  font-size: 0.7em;
+  font-weight: 400;
+  color: var(--text-sub);
+  margin-left: 4px;
+}
+
+.chevron {
+  width: 22px;
+  height: 22px;
+  color: var(--text-main);
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+}
+.card-header[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+/* In .head-row layouts the chevron sits outside the button (after the
+   info button) so it can be the rightmost element — same rotation,
+   driven by a sibling selector instead of a descendant one. */
+.card-header[aria-expanded="true"] ~ .chevron { transform: rotate(180deg); }
+
+.card-body {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card-body[hidden] { display: none; }
+
+.subgroup {
+  background: var(--subtle-bg);
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid var(--input-border);
+}
+.subgroup + .subgroup { margin-top: 12px; }
+.subgroup-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 4px 4px 12px;
+}
+.subgroup .field-stack { padding: 0 4px; display: flex; flex-direction: column; gap: 12px; }
+.subgroup .field-stack[hidden] { display: none; }
+
+/* Label sits beside the input rather than above it, in a fixed-width
+   column shared by every field — so every input box across the whole
+   app lines up to the same left edge and width, regardless of how long
+   an individual label is. Longer labels simply wrap to two lines. */
+.field {
+  display: grid;
+  grid-template-columns: 152px 1fr;
+  align-items: center;
+  column-gap: 10px;
+}
+.field label {
+  position: relative;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--text-sub);
+  line-height: 1.3;
+}
+/* Taken out of flow so the grid row's vertical centering sees only the
+   main label line's height — the main label text lines up with the
+   input's vertical center, and "optional" just hangs below it, rather
+   than the two lines centering as one block (which would push the main
+   label line above the input's center). */
+.field-label-optional {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-placeholder);
+  white-space: nowrap;
+}
+.field .field-value { min-width: 0; }
+.field .field-input-wrap { position: relative; }
+.field input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 2px solid var(--input-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 17px;
+  color: var(--text-main);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.12s ease;
+}
+/* Reserve room on the right for the unit label so typed digits never
+   run under it — kept in sync with .field-unit's own position below. */
+.field input.has-unit { padding-right: 40px; }
+.field input::placeholder { color: var(--text-placeholder); }
+.field input:not(:placeholder-shown) { border-color: var(--input-border-active); }
+.field input:focus { outline: none; border-color: var(--input-border-active); }
+/* Purely a visual overlay — doesn't affect the input's own box, so
+   adding or removing a unit never shifts the input's width or alignment. */
+.field-unit {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--text-sub);
+  pointer-events: none;
+  white-space: nowrap;
+}
+/* Patient Data's weight/height/BSA fields aren't wrapped in a
+   .field-stack (that's reserved for subgroups), so give them the same
+   row-to-row breathing room directly. :not([hidden]) keeps this from
+   overriding the browser's default [hidden] { display: none } — an
+   unguarded selector here would out-specificity that and defeat the
+   auto/manual BSA toggle. */
+#bsaAutoFields:not([hidden]), #bsaManualFields:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heart-rate-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin: 4px 0 0;
+}
+
+.bsa-toggle {
+  background: none;
+  border: none;
+  color: var(--input-border-active);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  touch-action: manipulation;
+  user-select: none;
+}
+.bsa-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Results */
+.results-title {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+.result-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 12px 16px;
+  background: var(--result-bg);
+  border-radius: 8px;
+}
+.result-row .label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--result-text);
+  min-width: 0;
+}
+.result-row .value {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--result-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.clear-btn {
+  background: var(--danger);
+  color: var(--danger-text);
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  margin: 4px 0 8px;
+  touch-action: manipulation;
+  user-select: none;
+}
+.clear-btn:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+
+.copy-btn {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  margin: 0 0 8px;
+  touch-action: manipulation;
+  user-select: none;
+}
+.copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+footer.note {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-sub);
+  padding: 4px 20px 24px;
+  line-height: 1.5;
+}
+
+/* Info ("i") buttons sit beside a heading. Where the heading is itself a
+   collapse button, both live in .head-row so the two never nest. */
+.head-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.head-row > .card-header { flex: 1; min-width: 0; }
+
+.info-btn {
+  flex-shrink: 0;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--input-border-active);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.info-btn svg { width: 17px; height: 17px; }
+.info-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.subgroup-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 4px 12px;
+}
+.subgroup-title-row .subgroup-title { margin: 0; }
+.head-row .info-btn { margin-left: 0; }
+
+/* Grade badges on results */
+.grade {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.grade-mild, .grade-normal { background: var(--grade-mild-bg); color: var(--grade-mild-text); }
+.grade-moderate, .grade-mildlyReduced { background: var(--grade-moderate-bg); color: var(--grade-moderate-text); }
+.grade-severe, .grade-reduced { background: var(--grade-severe-bg); color: var(--grade-severe-text); }
+.grade-massive, .grade-torrential { background: var(--grade-extreme-bg); color: var(--grade-extreme-text); }
+.grade-elevated { background: var(--grade-elevated-bg); color: var(--grade-elevated-text); }
+
+/* Full-screen info overlay */
+.info-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.info-overlay[hidden] { display: none; }
+
+.info-panel {
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.info-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+.info-bar h2 {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.info-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: var(--subtle-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  color: var(--text-main);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.info-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.info-close svg { width: 20px; height: 20px; }
+.info-close[hidden] { display: none; }
+
+.info-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 12px 32px;
+}
+
+.info-table-wrap {
+  overflow-x: auto;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+table.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+/* Tables with more columns than a phone screen can fit (e.g. TR's
+   Massive/Torrential columns) use fixed column widths from a <colgroup>
+   so Parameter + Mild/Moderate/Severe fit without scrolling, and only
+   the trailing columns require a horizontal scroll to reach. The
+   Parameter column stays pinned in place (sticky) while that happens. */
+table.info-table.wide {
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+table.info-table.wide thead th {
+  white-space: nowrap;
+}
+table.info-table.wide tbody th,
+table.info-table.wide tbody td {
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+table.info-table.wide th:first-child,
+table.info-table.wide td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--card);
+  box-shadow: 1px 0 0 var(--divider);
+}
+table.info-table.wide thead th:first-child { z-index: 2; }
+table.info-table.wide th,
+table.info-table.wide td {
+  padding-left: 7px;
+  padding-right: 7px;
+}
+table.info-table th,
+table.info-table td {
+  padding: 10px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--divider);
+}
+table.info-table thead th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+table.info-table tbody th {
+  font-weight: 600;
+  color: var(--text-main);
+}
+table.info-table tbody td { color: var(--text-sub); font-variant-numeric: tabular-nums; }
+table.info-table tr:last-child th,
+table.info-table tr:last-child td { border-bottom: none; }
+table.info-table th.col-mild { color: var(--grade-mild-text); }
+table.info-table th.col-moderate { color: var(--grade-moderate-text); }
+table.info-table th.col-severe { color: var(--grade-severe-text); }
+table.info-table th.col-massive,
+table.info-table th.col-torrential { color: var(--grade-extreme-bg); }
+html[data-theme="dark"] table.info-table th.col-massive,
+html[data-theme="dark"] table.info-table th.col-torrential { color: var(--grade-extreme-text); }
+
+/* Inline in-app links, styled as plain hyperlinks. Two flavors, told apart
+   by their data attribute: data-wiki-topic opens that wiki topic (used in
+   severity-table row labels, e.g. the "PISA" in "PISA radius (mm)"), and
+   data-scroll-target scrolls the current wiki body to that element's id
+   (e.g. a summary line jumping to a heading further down the same topic).
+   Rendered as a <button> rather than an <a> since both are in-app actions,
+   not navigable URLs. */
+.wiki-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.wiki-inline-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.info-notes {
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.info-notes h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.info-notes ul { margin: 0; padding-left: 18px; }
+.info-notes li {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-sub);
+  margin-bottom: 8px;
+}
+.info-notes li:last-child { margin-bottom: 0; }
+
+/* Echo Wiki */
+.wiki-topic-list { display: flex; flex-direction: column; gap: 8px; }
+.wiki-topic-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+}
+.wiki-topic-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wiki-topic-item svg { width: 18px; height: 18px; color: var(--text-sub); flex-shrink: 0; }
+.wiki-topic-item .wiki-topic-title { flex: 1; min-width: 0; }
+.wiki-kind-chip {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--subtle-bg);
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+.wiki-search-row {
+  padding: 10px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+.wiki-search-row[hidden] { display: none; }
+.wiki-search-row input[type="search"] {
+  width: 100%;
+  background: var(--input-bg);
+  border: 2px solid var(--input-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 15px;
+  color: var(--text-main);
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.wiki-search-row input[type="search"]::placeholder { color: var(--text-placeholder); }
+.wiki-search-row input[type="search"]:focus { outline: none; border-color: var(--input-border-active); }
+.wiki-cat {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-sub);
+  margin: 18px 0 8px 4px;
+}
+.wiki-topic-list > .wiki-cat:first-child { margin-top: 0; }
+.wiki-empty {
+  color: var(--text-sub);
+  font-size: 14px;
+  text-align: center;
+  padding: 48px 24px;
+  line-height: 1.6;
+}
+.wiki-body { font-size: 15px; line-height: 1.65; color: var(--text-main); }
+.wiki-body p { margin: 0 0 14px; }
+.wiki-body p:last-child { margin-bottom: 0; }
+.wiki-body h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; }
+.wiki-body ul { margin: 0 0 14px; padding-left: 20px; }
+.wiki-body li { margin-bottom: 6px; }
+.wiki-body a { color: var(--accent); }
+.wiki-body ol { margin: 0 0 14px; padding-left: 20px; }
+.wiki-body ol > li { margin-bottom: 10px; }
+.wiki-body ol ul { margin-top: 6px; margin-bottom: 0; }
+.wiki-body .info-table-wrap { margin: 4px 0 18px; }
+.wiki-figure {
+  margin: 4px 0 18px;
+  padding: 12px 8px;
+  background: var(--subtle-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+}
+.wiki-figure svg { display: block; width: 100%; height: auto; }
+.wiki-figure figcaption {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-sub);
+  text-align: center;
+  line-height: 1.4;
+}
+/* Photo figure with HTML text overlaid on a raster image by percentage
+   position — the image itself has a fixed cream background (not theme-
+   reactive), so label text uses a fixed dark color rather than
+   var(--text-main), which would turn white and vanish in dark mode. */
+.anatomy-figure { position: relative; }
+.anatomy-figure img { display: block; width: 100%; height: auto; border-radius: 6px; }
+.anatomy-figure .lbl {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #241b0f;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.anatomy-figure .lbl.title { font-size: 13px; }
+.anatomy-figure .lbl.chamber { font-size: 12px; }
+.anatomy-figure .lbl.small { font-size: 10.5px; white-space: normal; }
+.wiki-sources {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+}
+.wiki-sources h3 { font-size: 14px; margin: 0 0 8px; color: var(--text-sub); }
+.wiki-sources ul { margin: 0 0 10px; padding-left: 18px; }
+.wiki-sources li { font-size: 13px; line-height: 1.5; color: var(--text-sub); margin-bottom: 5px; }
+.wiki-reviewed, .wiki-disclaimer { font-size: 12px; color: var(--text-sub); margin: 0 0 4px; }
+.wiki-disclaimer { font-style: italic; }
+.wiki-callout {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: var(--grade-moderate-bg);
+  color: var(--grade-moderate-text);
+  border-radius: 10px;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.wiki-callout a { color: inherit; text-decoration: underline; }
+/* Deliberately reuses the calculator's own result-row colors, so this
+   reads as "the answer" in the same visual language as its output. */
+.wiki-summary {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  background: var(--result-bg);
+  color: var(--result-text);
+  border-radius: 12px;
+}
+.wiki-summary h3 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+  opacity: 0.75;
+}
+.wiki-summary ul { margin: 0; padding-left: 18px; }
+.wiki-summary li { margin-bottom: 6px; font-size: 14.5px; line-height: 1.5; }
+.wiki-summary li:last-child { margin-bottom: 0; }
