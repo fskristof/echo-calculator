@@ -584,7 +584,7 @@ const severityInfo = {
     avProsthetic: {
       title: "Elevated Prosthetic AV Gradient",
       tableBeforeFigure: {
-        heading: "Table 5 — Doppler Parameters of Prosthetic Aortic Valves",
+        heading: "Table 1 — Doppler Parameters of Prosthetic Aortic Valves",
         headers: ["Parameter", "Normal", "Possible stenosis", "Stenosis"],
         rows: [
           ["Jet velocity contour", "Triangular, early peaking", "Triangular to intermediate", "Rounded, symmetric"],
@@ -597,8 +597,19 @@ const severityInfo = {
         ],
       },
       figure: avAlgorithmFigure("en"),
+      // These are specifically about reading the algorithm above (its own
+      // footnotes, and what each of its outcomes can mean) — rendered
+      // directly under it, not lumped in with the general notes at the
+      // bottom, since they're important context for the diagram itself.
+      figureNotes: [
+        "Within a Normal result, EOAi further splits the finding: EOAi > 0.85 cm²/m² suggests a high-flow state (e.g. anemia, hyperthyroidism, an AV fistula); EOAi < 0.85 cm²/m² suggests patient-prosthesis mismatch (PPM).",
+        "Possible stenosis — other possible causes: prosthesis-patient mismatch with a narrow LVOT, an incorrectly positioned LVOT PW Doppler sample volume, or underestimation of Vmax.",
+        "Stenosis — other possible causes: valvular stenosis (e.g. thrombosis) or subvalvular stenosis.",
+        "Assessing mechanical valve motion: fluoroscopy (cine angiography), CT, or TEE. Determining the cause of stenosis: CT angiography, TEE, or cardiac MRI.",
+        "This app's own verdict (in Calculated Results, once AT/ET and DVI are available) doesn't require Vmax > 3 m/s to appear, and treats the jet as late-peaking if either AT > 100 ms or AT/ET > 0.37 holds, not only when both do.",
+      ],
       tableAfterFigure: {
-        heading: "Table 6 — Hemodynamic Criteria for Structural Valve Deterioration",
+        heading: "Table 2 — Hemodynamic Criteria for Structural Valve Deterioration",
         headers: ["Criterion", "Possible SVD", "Significant SVD"],
         rows: [
           ["Mean gradient", "Increase ≥10 mm Hg to a mean ≥20 mm Hg, with EOA decrease ≥0.3 cm² or ≥25% and/or DVI decrease ≥0.1 or ≥20% vs. baseline", "Increase ≥20 mm Hg to a mean ≥30 mm Hg, with EOA decrease ≥0.6 cm² or ≥50% and/or DVI decrease ≥0.2 or ≥40% vs. baseline"],
@@ -606,15 +617,10 @@ const severityInfo = {
         ],
       },
       notes: [
-        "Table 5 (above) requires at least one flow-dependent parameter (velocity, mean gradient) and one flow-independent parameter (EOA or DVI) to call significant stenosis; it only applies to SAVR — the guideline's separate TAVI change-from-baseline criteria aren't reproduced here since this app doesn't track serial studies.",
-        "This app's own Calculated Results grade DVI, AT, and AT/ET using Table 5's SAVR cutoffs directly; EOA is graded against the selected valve type/size's own reference EOA ± SD (see the picker above) using the same table's ±1 SD / ±2 SD bands, and only appears once a valve and size are picked.",
-        "EOAi is graded per Table 7 (below the algorithm), using patient-prosthesis-mismatch cutoffs that depend on BMI (calculated in the background from weight/height): >0.85 cm²/m² is normal under BMI 30 kg/m² (>0.70 cm²/m² at/above it), down to ≤0.65 cm²/m² (≤0.55 cm²/m² at/above BMI 30) for severe mismatch.",
-        "Within a Normal result on this app's own verdict below, EOAi further splits the finding: EOAi > 0.85 cm²/m² suggests a high-flow state (e.g. anemia, hyperthyroidism, an AV fistula); EOAi < 0.85 cm²/m² suggests patient-prosthesis mismatch (PPM).",
-        "Possible stenosis — other possible causes: prosthesis-patient mismatch with a narrow LVOT, an incorrectly positioned LVOT PW Doppler sample volume, or underestimation of Vmax.",
-        "Stenosis — other possible causes: valvular stenosis (e.g. thrombosis) or subvalvular stenosis.",
-        "Assessing mechanical valve motion: fluoroscopy (cine angiography), CT, or TEE. Determining the cause of stenosis: CT angiography, TEE, or cardiac MRI.",
-        "This app's own verdict (in Calculated Results, once AT/ET and DVI are available) doesn't require Vmax > 3 m/s to appear, and treats the jet as late-peaking if either AT > 100 ms or AT/ET > 0.37 holds, not only when both do.",
-        "Table 6 (above, structural valve deterioration) compares serial studies rather than staging absolute severity, so it has no \"Normal\" column — a change below the \"Possible SVD\" thresholds simply isn't SVD. In combined stenosis and regurgitation, SVD may be present at lower thresholds than shown.",
+        "Table 1 (above) requires at least one flow-dependent parameter (velocity, mean gradient) and one flow-independent parameter (EOA or DVI) to call significant stenosis; it only applies to SAVR — TAVI change-from-baseline criteria aren't reproduced here since this app doesn't track serial studies.",
+        "This app's own Calculated Results grade DVI, AT, and AT/ET using Table 1's SAVR cutoffs directly; EOA is graded against the selected valve type/size's own reference EOA ± SD (see the picker above) using the same table's ±1 SD / ±2 SD bands, and only appears once a valve and size are picked.",
+        "EOAi is graded using patient-prosthesis-mismatch cutoffs that depend on BMI (calculated in the background from weight/height): >0.85 cm²/m² is normal under BMI 30 kg/m² (>0.70 cm²/m² at/above it), down to ≤0.65 cm²/m² (≤0.55 cm²/m² at/above BMI 30) for severe mismatch.",
+        "Table 2 (above, structural valve deterioration) compares serial studies rather than staging absolute severity, so it has no \"Normal\" column — a change below the \"Possible SVD\" thresholds simply isn't SVD. In combined stenosis and regurgitation, SVD may be present at lower thresholds than shown.",
       ],
     },
     ms: {
@@ -715,7 +721,7 @@ const severityInfo = {
     avProsthetic: {
       title: "Emelkedett aorta műbillentyű grádiens",
       tableBeforeFigure: {
-        heading: "5. táblázat — Aorta műbillentyűk Doppler paraméterei",
+        heading: "1. táblázat — Aorta műbillentyűk Doppler paraméterei",
         headers: ["Paraméter", "Normális", "Lehetséges stenosis", "Stenosis"],
         rows: [
           ["Jet sebességi kontúr", "Háromszög, korai csúcsú", "Háromszög-köztes", "Kerekített, szimmetrikus"],
@@ -728,8 +734,18 @@ const severityInfo = {
         ],
       },
       figure: avAlgorithmFigure("hu"),
+      // Az algoritmus saját lábjegyzetei és az egyes kimenetek jelentése —
+      // közvetlenül alatta jelenik meg, nem az általános jegyzetek között a
+      // legalul, mivel fontos kontextust adnak magához az ábrához.
+      figureNotes: [
+        "Normál eredményen belül az alábbi, alkalmazás által adott értékelésnél az EOAi tovább bontja a leletet: EOAi > 0,85 cm²/m² gyorsult keringésre (pl. anaemia, hyperthyreosis, AV fistula) utal; EOAi < 0,85 cm²/m² patient-prosthesis mismatch-re (PPM) utal.",
+        "Lehetséges stenosis — lehetséges egyéb okok: műbillentyű-stenosis szűk LVOT-val, a LVOT PW Doppler helytelen pozíciója, vagy a Vmax alulbecslése.",
+        "Stenosis — lehetséges egyéb okok: valvuláris stenosis (pl. trombózis) vagy szubvalvuláris stenosis.",
+        "Mechanikus műbillentyű mozgásának megítélése: fluoroszkópia (cine angiográfia), CT, vagy TEE. A stenosis okának megállapítása: CT angiográfia, TEE, vagy szív MRI.",
+        "Az alkalmazás saját értékelése (a Számított eredmények között, amint az AT/ET és a DVI is rendelkezésre áll) nem követeli meg a Vmax > 3 m/s feltételt, és késői csúcsú jetnek tekinti, ha az AT > 100 ms VAGY az AT/ET > 0,37 teljesül — nem csak akkor, ha mindkettő.",
+      ],
       tableAfterFigure: {
-        heading: "6. táblázat — A strukturális műbillentyű-degeneráció hemodinamikai kritériumai",
+        heading: "2. táblázat — A strukturális műbillentyű-degeneráció hemodinamikai kritériumai",
         headers: ["Kritérium", "Lehetséges SVD", "Jelentős SVD"],
         rows: [
           ["Átlag grádiens", "≥10 Hgmm-es emelkedés ≥20 Hgmm-es átlag grádiensre, egyidejűleg ≥0,3 cm² vagy ≥25%-os EOA csökkenéssel és/vagy ≥0,1 vagy ≥20%-os DVI csökkenéssel a kiindulási értékhez képest", "≥20 Hgmm-es emelkedés ≥30 Hgmm-es átlag grádiensre, egyidejűleg ≥0,6 cm² vagy ≥50%-os EOA csökkenéssel és/vagy ≥0,2 vagy ≥40%-os DVI csökkenéssel a kiindulási értékhez képest"],
@@ -737,15 +753,10 @@ const severityInfo = {
         ],
       },
       notes: [
-        "Az 5. táblázat (fent) szerint a jelentős stenosishoz legalább egy flow-függő paraméter (sebesség, átlag grádiens) és egy flow-független paraméter (EOA vagy DVI) szükséges; csak SAVR-ra vonatkozik — a guideline külön TAVI kiindulási-értékhez viszonyított kritériumait itt nem közöljük, mivel az alkalmazás nem követ soros vizsgálatokat.",
-        "Az alkalmazás saját Számított eredményei a DVI-t, az AT-t és az AT/ET-t az 5. táblázat SAVR határértékeivel értékelik; az EOA-t a kiválasztott műbillentyű típus/méret saját referencia EOA ± SD értékéhez viszonyítva (lásd a fenti választót), ugyanazon táblázat ±1 SD / ±2 SD sávjaival — és csak akkor jelenik meg, ha műbillentyű és méret is ki van választva.",
-        "Az EOAi értékelése a 7. táblázat (az algoritmus alatt) alapján történik, amely a patient-prosthesis mismatch határértékeit a BMI-től (háttérben, testsúlyból és testmagasságból számítva) teszi függővé: >0,85 cm²/m² normális 30 kg/m² alatti BMI mellett (>0,70 cm²/m² 30 kg/m² fölött), egészen ≤0,65 cm²/m²-ig (≤0,55 cm²/m² 30 kg/m² BMI fölött) súlyos mismatch esetén.",
-        "Normál eredményen belül az alábbi, alkalmazás által adott értékelésnél az EOAi tovább bontja a leletet: EOAi > 0,85 cm²/m² gyorsult keringésre (pl. anaemia, hyperthyreosis, AV fistula) utal; EOAi < 0,85 cm²/m² patient-prosthesis mismatch-re (PPM) utal.",
-        "Lehetséges stenosis — lehetséges egyéb okok: műbillentyű-stenosis szűk LVOT-val, a LVOT PW Doppler helytelen pozíciója, vagy a Vmax alulbecslése.",
-        "Stenosis — lehetséges egyéb okok: valvuláris stenosis (pl. trombózis) vagy szubvalvuláris stenosis.",
-        "Mechanikus műbillentyű mozgásának megítélése: fluoroszkópia (cine angiográfia), CT, vagy TEE. A stenosis okának megállapítása: CT angiográfia, TEE, vagy szív MRI.",
-        "Az alkalmazás saját értékelése (a Számított eredmények között, amint az AT/ET és a DVI is rendelkezésre áll) nem követeli meg a Vmax > 3 m/s feltételt, és késői csúcsú jetnek tekinti, ha az AT > 100 ms VAGY az AT/ET > 0,37 teljesül — nem csak akkor, ha mindkettő.",
-        "A 6. táblázat (fent, strukturális műbillentyű-degeneráció) soros vizsgálatokat hasonlít össze, nem abszolút súlyossági fokozatot állapít meg, ezért nincs \"Normális\" oszlopa — a „Lehetséges SVD” határérték alatti változás egyszerűen nem SVD. Kombinált stenosis és regurgitáció esetén az SVD alacsonyabb határértékeknél is fennállhat.",
+        "Az 1. táblázat (fent) szerint a jelentős stenosishoz legalább egy flow-függő paraméter (sebesség, átlag grádiens) és egy flow-független paraméter (EOA vagy DVI) szükséges; csak SAVR-ra vonatkozik — a TAVI kiindulási-értékhez viszonyított kritériumait itt nem közöljük, mivel az alkalmazás nem követ soros vizsgálatokat.",
+        "Az alkalmazás saját Számított eredményei a DVI-t, az AT-t és az AT/ET-t az 1. táblázat SAVR határértékeivel értékelik; az EOA-t a kiválasztott műbillentyű típus/méret saját referencia EOA ± SD értékéhez viszonyítva (lásd a fenti választót), ugyanazon táblázat ±1 SD / ±2 SD sávjaival — és csak akkor jelenik meg, ha műbillentyű és méret is ki van választva.",
+        "Az EOAi értékelését a patient-prosthesis mismatch határértékei alapján végezzük, amelyek a BMI-től (háttérben, testsúlyból és testmagasságból számítva) függenek: >0,85 cm²/m² normális 30 kg/m² alatti BMI mellett (>0,70 cm²/m² 30 kg/m² fölött), egészen ≤0,65 cm²/m²-ig (≤0,55 cm²/m² 30 kg/m² BMI fölött) súlyos mismatch esetén.",
+        "A 2. táblázat (fent, strukturális műbillentyű-degeneráció) soros vizsgálatokat hasonlít össze, nem abszolút súlyossági fokozatot állapít meg, ezért nincs \"Normális\" oszlopa — a „Lehetséges SVD” határérték alatti változás egyszerűen nem SVD. Kombinált stenosis és regurgitáció esetén az SVD alacsonyabb határértékeknél is fennállhat.",
       ],
     },
     ms: {
@@ -854,9 +865,9 @@ function renderInfo(topicKey) {
   $("#infoTitle").textContent = info.title;
   // Most topics are a single severity table (headers/rows straight on
   // info); avProsthetic instead has a figure sandwiched between two
-  // tables (Table 5 before it, Table 6 after — Zoghbi et al. 2024), via
-  // tableBeforeFigure/tableAfterFigure. buildSeverityTable() needs
-  // headers/rows, so only call it when a given piece is actually present.
+  // tables, via tableBeforeFigure/tableAfterFigure. buildSeverityTable()
+  // needs headers/rows, so only call it when a given piece is actually
+  // present.
   // An optional `heading` on tableBeforeFigure/tableAfterFigure (unlike
   // buildSeverityTable's own spec fields) gets its own <h3> above the
   // table, since two tables sandwiching one figure need distinguishing —
@@ -865,6 +876,13 @@ function renderInfo(topicKey) {
     ? (info.tableBeforeFigure.heading ? `<h3>${info.tableBeforeFigure.heading}</h3>` : "") + buildSeverityTable(info.tableBeforeFigure)
     : "";
   const figureHtml = info.figure || "";
+  // figureNotes are specifically about reading the figure/algorithm (e.g.
+  // its footnotes, the outcomes it can produce) — rendered directly under
+  // it rather than lumped in with the general `notes` at the very bottom,
+  // since they're important context for the diagram right above them.
+  const figureNotesHtml = info.figureNotes && info.figureNotes.length
+    ? `<div class="info-notes"><ul>${info.figureNotes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
+    : "";
   const tableAfterHtml = info.tableAfterFigure
     ? (info.tableAfterFigure.heading ? `<h3>${info.tableAfterFigure.heading}</h3>` : "") + buildSeverityTable(info.tableAfterFigure)
     : "";
@@ -872,7 +890,7 @@ function renderInfo(topicKey) {
   const notesHtml = info.notes && info.notes.length
     ? `<div class="info-notes"><h3>${uiStrings[state.language].notes}</h3><ul>${info.notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
     : "";
-  $("#infoContent").innerHTML = tableBeforeHtml + figureHtml + tableAfterHtml + tableHtml + notesHtml;
+  $("#infoContent").innerHTML = tableBeforeHtml + figureHtml + figureNotesHtml + tableAfterHtml + tableHtml + notesHtml;
 }
 
 // Shared by both full-screen overlays (info + wiki), which are mutually

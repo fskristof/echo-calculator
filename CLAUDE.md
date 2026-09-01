@@ -288,16 +288,27 @@ row's far right like `.head-row .info-btn` elsewhere — via a dedicated `.switc
 in `styles.css` that overrides `.info-btn`'s default `margin-left: auto`, the same way
 `.head-row .info-btn` does for its own context.
 
-`avProsthetic` also carries Table 5 (Doppler parameters of prosthetic aortic valves) and Table 6
-(hemodynamic criteria for structural valve deterioration) from the same guideline, as full
-`buildSeverityTable()` tables sandwiching the figure — Table 5 before it, Table 6 after — via two new
-`info` fields, `tableBeforeFigure`/`tableAfterFigure` (each an ordinary `{ heading?, headers, rows,
-... }` spec; `heading` is new too, rendered as its own `<h3>` since two tables need distinguishing
-where every other topic's single table just uses the topic's own title). `renderInfo()` composes
-`tableBeforeHtml + figureHtml + tableAfterHtml + tableHtml + notesHtml` — the last `tableHtml` (a bare
-`info.headers`/`.rows`) stays for every other topic, which has never needed more than one table. Table
-6 keeps its own real column headers ("Possible SVD" / "Significant SVD") rather than being forced into
-the Normal/Possible-stenosis/Stenosis 3-grade shape Table 5 uses — it's a serial-comparison table (has
-no "Normal" baseline row at all), and forcing that shape would misrepresent it. Table 7 (used for EOAi
-grading — see above) isn't reproduced as a table here, only referenced in a `notes` bullet, since nothing
-asked for it to be shown.
+`avProsthetic` also carries the guideline's Doppler-parameters-of-prosthetic-valves table and its
+hemodynamic-criteria-for-structural-valve-deterioration table (Tables 5 and 6 in Zoghbi et al. 2024 —
+that numbering is only how they're located in the source PDF; the UI deliberately labels them "Table 1"
+and "Table 2" instead, sequential within this topic rather than tied to the source document's own
+numbering, per user direction), as full `buildSeverityTable()` tables sandwiching the figure — the
+first before it, the second after — via two new `info` fields, `tableBeforeFigure`/`tableAfterFigure`
+(each an ordinary `{ heading?, headers, rows, ... }` spec; `heading` is new too, rendered as its own
+`<h3>` since two tables need distinguishing where every other topic's single table just uses the
+topic's own title). `renderInfo()` composes `tableBeforeHtml + figureHtml + figureNotesHtml +
+tableAfterHtml + tableHtml + notesHtml` — the last `tableHtml` (a bare `info.headers`/`.rows`) stays
+for every other topic, which has never needed more than one table. "Table 2" keeps its own real column
+headers ("Possible SVD" / "Significant SVD") rather than being forced into the Normal/Possible-
+stenosis/Stenosis 3-grade shape "Table 1" uses — it's a serial-comparison table (has no "Normal"
+baseline row at all), and forcing that shape would misrepresent it. The guideline's Table 7 (used for
+EOAi grading — see above) isn't reproduced as a table here at all, only referenced in a `notes` bullet
+(without a number, for the same reason), since nothing asked for it to be shown.
+
+`figureNotes` is a third new `info` field, separate from `notes`: it holds the algorithm's own
+footnotes and what each of its outcomes can mean (the EOAi high-flow/PPM split, "other possible
+causes" per outcome, the assessment/cause-finding modalities, and the early/late-peaking departure
+note) and renders directly under the figure, before "Table 2" — not lumped in with the general `notes`
+at the very bottom, since it's important context for reading the diagram right above it. The remaining,
+more general `notes` (what "Table 1"/"Table 2" require or represent, how this app's own badges use
+Table 1's cutoffs, the BMI-dependent EOAi cutoff pair) stay at the bottom as before.
