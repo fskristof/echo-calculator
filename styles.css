@@ -640,14 +640,13 @@ footer.note {
   white-space: nowrap;
 }
 /* "Possible stenosis" ("Lehetséges stenosis" in HU) is long enough to
-   overflow the pill at this font size — wrap it onto two lines instead of
-   letting it run wide. Other grade labels are all short enough that this
-   max-width never binds, so they stay single-line as before. */
+   run wider than the other grade pills — shrink it slightly (font-size,
+   padding, letter-spacing) so it still fits on one row instead of
+   wrapping or crowding the value column next to it. */
 .grade-possibleStenosis {
-  white-space: normal;
-  max-width: 82px;
-  text-align: center;
-  line-height: 1.3;
+  font-size: 9.5px;
+  padding: 3px 6px;
+  letter-spacing: 0.01em;
 }
 .grade-mild, .grade-normal { background: var(--grade-mild-bg); color: var(--grade-mild-text); }
 .grade-moderate, .grade-mildlyReduced, .grade-possibleStenosis { background: var(--grade-moderate-bg); color: var(--grade-moderate-text); }
