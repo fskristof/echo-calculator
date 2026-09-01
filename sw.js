@@ -1,7 +1,7 @@
 // Bump this version string whenever ANY app file changes (index.html, manifest.json,
 // icons, or this file itself). Cache-first means visitors keep the old version until
 // the cache name changes, so a stale CACHE constant = a stuck app.
-const CACHE = 'echo-calc-v4.21';
+const CACHE = 'echo-calc-v4.24';
 
 const PRECACHE_URLS = [
   './',

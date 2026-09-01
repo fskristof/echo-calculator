@@ -386,4 +386,86 @@ window.prostheticAorticValves = [
     { size: "27", peak: "10.1 ± 5.8", mean: "5.0 ± 2.9", eoa: "2.0 ± 0.3" },
     { size: "29", peak: "7.7 ± 4.4", mean: "4.1 ± 2.4", eoa: "2.4 ± 0.6" },
   ]},
+
+  // ---- Added from a valve-reference app's own per-size screenshots (not
+  // the Zoghbi 2024 appendix tables above) — mechanical/biological category
+  // taken from how the source screenshots were organized (folders named
+  // "Mechanical"/"Biological"), each also naming a bileaflet mechanism or a
+  // pericardial/porcine leaflet material consistent with that category.
+  // Some sizes show identical peak/mean/EOA to the adjacent size in the
+  // source screenshot itself (Carbomedics Orbis 29 vs 31, CE STD 2625 29 vs
+  // 31) — transcribed as shown rather than assumed to be an error, since
+  // it isn't possible to tell from a screenshot alone whether that reflects
+  // no distinct data being available for that size in the source.
+  // Carbomedics Orbis and CE STD 2625 duplicate the existing Carbomedics
+  // Standard / Carpentier Edwards Standard entries above almost exactly —
+  // likely the same physical valves under a different model name/number —
+  // but are kept as separate entries since that's the name this source
+  // uses, rather than merged into or renamed from the existing ones.
+  { name: "Carbomedics Orbis", category: "mechanical", sizes: [
+    { size: "19", peak: "38.0 ± 12.8", mean: "18.9 ± 8.3", eoa: "1.0 ± 0.3" },
+    { size: "21", peak: "26.8 ± 10.1", mean: "12.9 ± 5.4", eoa: "1.4 ± 0.4" },
+    { size: "23", peak: "22.5 ± 7.4", mean: "11.0 ± 4.6", eoa: "1.5 ± 0.3" },
+    { size: "25", peak: "19.6 ± 7.8", mean: "9.1 ± 3.5", eoa: "1.8 ± 0.4" },
+    { size: "27", peak: "17.5 ± 7.1", mean: "7.9 ± 3.2", eoa: "2.2 ± 0.2" },
+    { size: "29", peak: "9.1 ± 4.7", mean: "5.6 ± 3.0", eoa: "3.2 ± 1.6" },
+    { size: "31", peak: "9.1 ± 4.7", mean: "5.6 ± 3.0", eoa: "3.2 ± 1.6" },
+  ]},
+  { name: "Medtronic Open Pivot AP", category: "mechanical", sizes: [
+    { size: "18", mean: "21.0 ± 1.8", eoa: "1.2 ± 0.3" },
+    { size: "20", peak: "21.4 ± 4.2", mean: "11.1 ± 3.5", eoa: "1.3 ± 0.3" },
+    { size: "22", peak: "18.7 ± 8.3", mean: "10.5 ± 4.5", eoa: "1.7 ± 0.4" },
+    { size: "24", peak: "15.1 ± 5.6", mean: "7.5 ± 3.1", eoa: "2.0 ± 0.6" },
+    { size: "26", mean: "6.0 ± 2.0", eoa: "2.1 ± 0.4" },
+    { size: "28", eoa: "2.3" },
+  ]},
+  { name: "Medtronic Open Pivot Standard", category: "mechanical", sizes: [
+    { size: "19", peak: "47.0 ± 12.6", mean: "25.3 ± 8.0", eoa: "1.1 ± 0.3" },
+    { size: "21", peak: "23.7 ± 6.8", mean: "15.9 ± 5.0", eoa: "1.4 ± 0.5" },
+    { size: "23", peak: "19.0 ± 7.0", mean: "14.4 ± 4.9", eoa: "1.7 ± 0.5" },
+    { size: "25", peak: "17.0 ± 8.0", mean: "11.3 ± 3.7", eoa: "2.1 ± 0.7" },
+    { size: "27", peak: "14.0 ± 4.0", mean: "8.4 ± 3.7", eoa: "2.5 ± 0.1" },
+    { size: "29", peak: "11.0 ± 3.0", mean: "8.0 ± 3.0", eoa: "3.1 ± 0.8" },
+  ]},
+  { name: "CE Magna 3000", category: "biological", sizes: [
+    { size: "19", peak: "22.9 ± 8.0", mean: "11.9 ± 4.1", eoa: "1.3 ± 0.3" },
+    { size: "21", peak: "18.2 ± 5.8", mean: "9.8 ± 3.3", eoa: "1.5 ± 0.3" },
+    { size: "23", peak: "17.6 ± 5.7", mean: "9.1 ± 3.3", eoa: "1.8 ± 0.4" },
+    { size: "25", peak: "16.3 ± 4.8", mean: "8.4 ± 2.6", eoa: "2.1 ± 0.5" },
+    { size: "27", mean: "11.3 ± 5.0", eoa: "2.4" },
+    { size: "29", mean: "11.3 ± 5.0", eoa: "2.5" },
+  ]},
+  { name: "CE Magna Ease 3300", category: "biological", sizes: [
+    { size: "19", peak: "22.9 ± 8.0", mean: "17.7 ± 0.2", eoa: "1.2 ± 0.1" },
+    { size: "21", peak: "18.2 ± 5.8", mean: "9.8 ± 3.3", eoa: "1.4 ± 0.4" },
+    { size: "23", peak: "17.6 ± 5.7", mean: "9.1 ± 3.3", eoa: "1.8 ± 0.3" },
+    { size: "25", peak: "16.3 ± 4.8", mean: "8.4 ± 2.6", eoa: "2.1 ± 0.5" },
+    { size: "27", mean: "11.3 ± 5.0", eoa: "2.4" },
+    { size: "29", mean: "11.3 ± 5.0", eoa: "2.5" },
+  ]},
+  { name: "CE STD 2625", category: "biological", sizes: [
+    { size: "19", peak: "43.5 ± 12.7", mean: "25.6 ± 8.0", eoa: "0.9 ± 0.2" },
+    { size: "21", peak: "27.7 ± 7.6", mean: "17.3 ± 6.2", eoa: "1.5 ± 0.3" },
+    { size: "23", peak: "28.9 ± 7.5", mean: "16.1 ± 6.2", eoa: "1.7 ± 0.5" },
+    { size: "25", peak: "24.0 ± 7.1", mean: "12.9 ± 4.6", eoa: "1.9 ± 0.5" },
+    { size: "27", peak: "22.1 ± 8.2", mean: "12.1 ± 5.5", eoa: "2.3 ± 0.6" },
+    { size: "29", mean: "9.9 ± 2.9", eoa: "2.8 ± 0.5" },
+    { size: "31", mean: "9.9 ± 2.9", eoa: "2.8 ± 0.5" },
+  ]},
+  { name: "Crown", category: "biological", sizes: [
+    { size: "19", peak: "18.7 ± 5.1", mean: "13.1 ± 3.3", eoa: "1.1 ± 0.2" },
+    { size: "21", peak: "20.2 ± 0.0", mean: "15.4 ± 0.0", eoa: "1.3 ± 0.3" },
+    { size: "23", peak: "14.04 ± 4.9", mean: "7.6 ± 3.4", eoa: "1.5 ± 0.3" },
+    { size: "25", peak: "17.0 ± 11.31", mean: "6.6 ± 1.7", eoa: "1.8 ± 0.3" },
+    { size: "27", peak: "13.0 ± 3.0", mean: "6.6 ± 1.7", eoa: "1.8 ± 0.3" },
+    { size: "29", eoa: "2.0 ± 0.4" },
+  ]},
+  { name: "Freestyle Root", category: "biological", sizes: [
+    { size: "19", mean: "13.0 ± 3.9", eoa: "1.2 ± 0.2" },
+    { size: "21", mean: "7.9 ± 2.6", eoa: "1.4 ± 0.2" },
+    { size: "23", peak: "11.0 ± 4.0", mean: "7.2 ± 2.5", eoa: "1.7 ± 0.3" },
+    { size: "25", mean: "5.4 ± 1.5", eoa: "2.1 ± 0.4" },
+    { size: "27", mean: "4.7 ± 1.6", eoa: "2.5 ± 0.5" },
+    { size: "29", eoa: "2.5" },
+  ]},
 ];

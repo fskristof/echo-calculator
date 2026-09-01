@@ -422,8 +422,10 @@ function avAlgorithmFigure(lang) {
       earlyTitle: "Korai csúcs", earlyAt: "AT < 100 ms", earlyRatio: "AT/ET < 0,37",
       lateTitle: "Késői csúcs", lateAt: "AT > 100 ms", lateRatio: "AT/ET > 0,37",
       dvi1: "DVI ≥ 0,30", dvi2: "DVI 0,25–0,29", dvi3: "DVI < 0,25",
-      outcome1a: "Normál", outcome1b: "aorta műbillentyű",
-      outcome2: "Lehetséges stenosis", outcome3: "Stenosis",
+      outcome1a: "Normál", outcome1b: "aorta", outcome1c: "műbillentyű",
+      outcome2a: "Lehetséges", outcome2b: "stenosis", outcome3: "Stenosis",
+      eoaiHigh: "EOAi > 0,85", eoaiHighLabel: "Magas flow",
+      eoaiLow: "EOAi < 0,85", eoaiLowLabel: "PPM",
     }
     : {
       caption: "The ASE 2024 decision algorithm for an elevated prosthetic aortic valve gradient.",
@@ -431,12 +433,14 @@ function avAlgorithmFigure(lang) {
       earlyTitle: "Early-peaking jet", earlyAt: "AT < 100 ms", earlyRatio: "AT/ET < 0.37",
       lateTitle: "Late-peaking jet", lateAt: "AT > 100 ms", lateRatio: "AT/ET > 0.37",
       dvi1: "DVI ≥ 0.30", dvi2: "DVI 0.25–0.29", dvi3: "DVI < 0.25",
-      outcome1a: "Normal", outcome1b: "prosthetic aortic valve",
-      outcome2: "Possible stenosis", outcome3: "Stenosis",
+      outcome1a: "Normal", outcome1b: "prosthetic", outcome1c: "aortic valve",
+      outcome2a: "Possible", outcome2b: "stenosis", outcome3: "Stenosis",
+      eoaiHigh: "EOAi > 0.85", eoaiHighLabel: "High-flow",
+      eoaiLow: "EOAi < 0.85", eoaiLowLabel: "PPM",
     };
   return `
     <figure class="wiki-figure">
-      <svg viewBox="0 0 380 300" role="img" aria-label="${t.caption}">
+      <svg viewBox="0 0 380 380" role="img" aria-label="${t.caption}">
         <defs>
           <marker id="av-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10 z" fill="var(--text-sub)"></path>
@@ -484,14 +488,34 @@ function avAlgorithmFigure(lang) {
 
         <!-- Outcomes -->
         <rect x="15" y="242" width="100" height="52" rx="10" fill="var(--grade-mild-bg)"></rect>
-        <text x="65" y="264" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-mild-text)">${t.outcome1a}</text>
-        <text x="65" y="279" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-mild-text)">${t.outcome1b}</text>
+        <text x="65" y="260" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--grade-mild-text)">${t.outcome1a}</text>
+        <text x="65" y="271" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--grade-mild-text)">${t.outcome1b}</text>
+        <text x="65" y="282" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--grade-mild-text)">${t.outcome1c}</text>
 
         <rect x="140" y="242" width="100" height="52" rx="10" fill="var(--grade-moderate-bg)"></rect>
-        <text x="190" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-moderate-text)">${t.outcome2}</text>
+        <text x="190" y="264" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-moderate-text)">${t.outcome2a}</text>
+        <text x="190" y="279" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-moderate-text)">${t.outcome2b}</text>
 
         <rect x="265" y="242" width="100" height="52" rx="10" fill="var(--grade-severe-bg)"></rect>
         <text x="315" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-severe-text)">${t.outcome3}</text>
+
+        <!-- The Normal outcome splits further by EOAi (folded in from what
+             used to be a separate footnote — see figureNotes above this
+             function's call site): a high-flow state raises Vmax the same
+             way stenosis does but isn't stenosis, while PPM is a mismatch
+             between a normally-functioning valve and the patient's body
+             size, not valve dysfunction either. Both still read as
+             "Normal" (mild-colored), just split two ways under it. -->
+        <line x1="65" y1="294" x2="39" y2="312" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+        <line x1="65" y1="294" x2="123" y2="312" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+
+        <rect x="0" y="314" width="78" height="56" rx="10" fill="var(--grade-mild-bg)" opacity="0.6" stroke="var(--grade-mild-text)" stroke-opacity="0.3" stroke-width="1"></rect>
+        <text x="39" y="335" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-mild-text)">${t.eoaiHigh}</text>
+        <text x="39" y="350" text-anchor="middle" font-size="11" fill="var(--grade-mild-text)">${t.eoaiHighLabel}</text>
+
+        <rect x="84" y="314" width="78" height="56" rx="10" fill="var(--grade-mild-bg)" opacity="0.6" stroke="var(--grade-mild-text)" stroke-opacity="0.3" stroke-width="1"></rect>
+        <text x="123" y="335" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-mild-text)">${t.eoaiLow}</text>
+        <text x="123" y="350" text-anchor="middle" font-size="11" fill="var(--grade-mild-text)">${t.eoaiLowLabel}</text>
       </svg>
       <figcaption>${t.caption}</figcaption>
     </figure>
@@ -586,6 +610,11 @@ const severityInfo = {
       tableBeforeFigure: {
         heading: "Table 1 — Doppler Parameters of Prosthetic Aortic Valves",
         headers: ["Parameter", "Normal", "Possible stenosis", "Stenosis"],
+        // "Possible stenosis" is the longest header by far; narrowing its
+        // column and letting it wrap onto two lines (wrapHeaders) keeps it
+        // from otherwise forcing the whole table wider than a phone screen.
+        wrapHeaders: true,
+        colWidths: ["29%", "24%", "24%", "23%"],
         rows: [
           ["Jet velocity contour", "Triangular, early peaking", "Triangular to intermediate", "Rounded, symmetric"],
           ["Acceleration time (ms)", "<80", "80–100", ">100"],
@@ -602,8 +631,7 @@ const severityInfo = {
       // directly under it, not lumped in with the general notes at the
       // bottom, since they're important context for the diagram itself.
       figureNotes: [
-        "Within a Normal result, EOAi further splits the finding: EOAi > 0.85 cm²/m² suggests a high-flow state (e.g. anemia, hyperthyroidism, an AV fistula); EOAi < 0.85 cm²/m² suggests patient-prosthesis mismatch (PPM).",
-        "Possible stenosis — other possible causes: prosthesis-patient mismatch with a narrow LVOT, an incorrectly positioned LVOT PW Doppler sample volume, or underestimation of Vmax.",
+        "Possible stenosis — other possible causes: prosthesis-patient mismatch with a narrow LVOT, an incorrectly positioned LVOT PW Doppler sample volume, or underestimation of jet Doppler velocity.",
         "Stenosis — other possible causes: valvular stenosis (e.g. thrombosis) or subvalvular stenosis.",
         "Assessing mechanical valve motion: fluoroscopy (cine angiography), CT, or TEE. Determining the cause of stenosis: CT angiography, TEE, or cardiac MRI.",
         "This app's own verdict (in Calculated Results, once AT/ET and DVI are available) doesn't require Vmax > 3 m/s to appear, and treats the jet as late-peaking if either AT > 100 ms or AT/ET > 0.37 holds, not only when both do.",
@@ -723,6 +751,8 @@ const severityInfo = {
       tableBeforeFigure: {
         heading: "1. táblázat — Aorta műbillentyűk Doppler paraméterei",
         headers: ["Paraméter", "Normális", "Lehetséges stenosis", "Stenosis"],
+        wrapHeaders: true,
+        colWidths: ["28%", "24%", "23%", "25%"],
         rows: [
           ["Jet sebességi kontúr", "Háromszög, korai csúcsú", "Háromszög-köztes", "Kerekített, szimmetrikus"],
           ["Akcelerációs idő (ms)", "<80", "80–100", ">100"],
@@ -738,8 +768,7 @@ const severityInfo = {
       // közvetlenül alatta jelenik meg, nem az általános jegyzetek között a
       // legalul, mivel fontos kontextust adnak magához az ábrához.
       figureNotes: [
-        "Normál eredményen belül az alábbi, alkalmazás által adott értékelésnél az EOAi tovább bontja a leletet: EOAi > 0,85 cm²/m² gyorsult keringésre (pl. anaemia, hyperthyreosis, AV fistula) utal; EOAi < 0,85 cm²/m² patient-prosthesis mismatch-re (PPM) utal.",
-        "Lehetséges stenosis — lehetséges egyéb okok: műbillentyű-stenosis szűk LVOT-val, a LVOT PW Doppler helytelen pozíciója, vagy a Vmax alulbecslése.",
+        "Lehetséges stenosis — lehetséges egyéb okok: műbillentyű-stenosis szűk LVOT-val, a LVOT PW Doppler helytelen pozíciója, vagy Vmax alulbecslés - jet doppler sebességének alulbecslése.",
         "Stenosis — lehetséges egyéb okok: valvuláris stenosis (pl. trombózis) vagy szubvalvuláris stenosis.",
         "Mechanikus műbillentyű mozgásának megítélése: fluoroszkópia (cine angiográfia), CT, vagy TEE. A stenosis okának megállapítása: CT angiográfia, TEE, vagy szív MRI.",
         "Az alkalmazás saját értékelése (a Számított eredmények között, amint az AT/ET és a DVI is rendelkezésre áll) nem követeli meg a Vmax > 3 m/s feltételt, és késői csúcsú jetnek tekinti, ha az AT > 100 ms VAGY az AT/ET > 0,37 teljesül — nem csak akkor, ha mindkettő.",
@@ -755,7 +784,7 @@ const severityInfo = {
       notes: [
         "Az 1. táblázat (fent) szerint a jelentős stenosishoz legalább egy flow-függő paraméter (sebesség, átlag grádiens) és egy flow-független paraméter (EOA vagy DVI) szükséges; csak SAVR-ra vonatkozik — a TAVI kiindulási-értékhez viszonyított kritériumait itt nem közöljük, mivel az alkalmazás nem követ soros vizsgálatokat.",
         "Az alkalmazás saját Számított eredményei a DVI-t, az AT-t és az AT/ET-t az 1. táblázat SAVR határértékeivel értékelik; az EOA-t a kiválasztott műbillentyű típus/méret saját referencia EOA ± SD értékéhez viszonyítva (lásd a fenti választót), ugyanazon táblázat ±1 SD / ±2 SD sávjaival — és csak akkor jelenik meg, ha műbillentyű és méret is ki van választva.",
-        "Az EOAi értékelését a patient-prosthesis mismatch határértékei alapján végezzük, amelyek a BMI-től (háttérben, testsúlyból és testmagasságból számítva) függenek: >0,85 cm²/m² normális 30 kg/m² alatti BMI mellett (>0,70 cm²/m² 30 kg/m² fölött), egészen ≤0,65 cm²/m²-ig (≤0,55 cm²/m² 30 kg/m² BMI fölött) súlyos mismatch esetén.",
+        "Az EOAi értékelését a patient-prosthesis mismatch határértékei alapján végezzük, amelyek a BMI-től függenek (háttérben, testsúlyból és testmagasságból számítva): >0,85 cm²/m² normális 30 kg/m² alatti BMI mellett (>0,70 cm²/m² 30 kg/m² fölött), és ≤0,65 cm²/m² (≤0,55 cm²/m² 30 kg/m² BMI fölött) súlyos mismatchre utal.",
         "A 2. táblázat (fent, strukturális műbillentyű-degeneráció) soros vizsgálatokat hasonlít össze, nem abszolút súlyossági fokozatot állapít meg, ezért nincs \"Normális\" oszlopa — a „Lehetséges SVD” határérték alatti változás egyszerűen nem SVD. Kombinált stenosis és regurgitáció esetén az SVD alacsonyabb határértékeknél is fennállhat.",
       ],
     },
@@ -823,8 +852,11 @@ let currentInfoTopic = null;
 // looks identical to the ones behind the calculator's ⓘ buttons —
 // .info-table-wrap / .info-table are global CSS, not scoped to the info
 // overlay, so this is safe to reuse anywhere in .wiki-body too.
-// spec: { headers[], rows[], colWidths?, wide? }
+// spec: { headers[], rows[], colWidths?, wide?, wrapHeaders? }
 // A row cell may be a plain string, or { text, span } for a colspan.
+// wrapHeaders lets a long header (e.g. "Possible stenosis") wrap onto a
+// second line instead of forcing its column wide enough for one — combine
+// with a narrow colWidths entry for that column to actually shrink it.
 function buildSeverityTable(spec) {
   const colClasses = ["", "col-mild", "col-moderate", "col-severe", "col-massive", "col-torrential"];
   const theadCells = spec.headers.map((h, i) => {
@@ -845,12 +877,15 @@ function buildSeverityTable(spec) {
   // A fixed-layout table with width:auto still expands columns to fit
   // unbreakable content in some browsers, ignoring the colgroup — so the
   // table width has to be pinned explicitly to the sum of the columns.
-  const tableWidthPx = spec.colWidths
+  // Skipped for percentage colWidths (wrapHeaders tables): there the whole
+  // point is to fill the container's actual width, not a guessed px total.
+  const usesPercentWidths = spec.colWidths && spec.colWidths.some(w => w.trim().endsWith("%"));
+  const tableWidthPx = spec.colWidths && !usesPercentWidths
     ? spec.colWidths.reduce((sum, w) => sum + parseFloat(w), 0)
     : null;
   return `
     <div class="info-table-wrap">
-      <table class="info-table${spec.wide ? " wide" : ""}"${tableWidthPx ? ` style="width:${tableWidthPx}px"` : ""}>
+      <table class="info-table${spec.wide ? " wide" : ""}${spec.wrapHeaders ? " wrap-headers" : ""}"${tableWidthPx ? ` style="width:${tableWidthPx}px"` : ""}>
         ${colgroup}
         <thead><tr>${theadCells}</tr></thead>
         <tbody>${bodyRows}</tbody>
