@@ -352,6 +352,101 @@ const trLayout = {
   colWidths: ["104px", "80px", "88px", "80px", "84px", "84px"],
 };
 
+// Inline SVG for the "elevated prosthetic aortic valve gradient" decision
+// tree (Zoghbi et al. 2024 — same source as calculateAvVerdict and
+// prosthetic-data/aortic-valves.js), themed with the app's CSS custom
+// properties so it matches light/dark automatically. Scoped to just the
+// decision-tree boxes/arrows; the EOAi sub-split, "other possible causes"
+// lists, and footnotes are plain prose in severityInfo.avProsthetic.notes
+// below instead of packed into SVG text, since they're easier to read (and
+// translate) as wrapped HTML than hand-wrapped SVG <text>. The three
+// outcome boxes reuse the same --grade-mild/-moderate/-severe tokens as
+// .av-verdict, so the diagram and the app's own computed verdict card read
+// as the same color language.
+function avAlgorithmFigure(lang) {
+  const t = lang === "hu"
+    ? {
+      caption: "Az ASE 2024 döntési algoritmusa emelkedett aorta műbillentyű grádiens esetén.",
+      trigger1: "Aorta műbillentyű", trigger2: "Vmax > 3 m/s",
+      earlyTitle: "Korai csúcs", earlyAt: "AT < 100 ms", earlyRatio: "AT/ET < 0,37",
+      lateTitle: "Késői csúcs", lateAt: "AT > 100 ms", lateRatio: "AT/ET > 0,37",
+      dvi1: "DVI ≥ 0,30", dvi2: "DVI 0,25–0,29", dvi3: "DVI < 0,25",
+      outcome1a: "Normál", outcome1b: "aorta műbillentyű",
+      outcome2: "Lehetséges sztenózis", outcome3: "Sztenózis",
+    }
+    : {
+      caption: "The ASE 2024 decision algorithm for an elevated prosthetic aortic valve gradient.",
+      trigger1: "Prosthetic aortic valve", trigger2: "Vmax > 3 m/s",
+      earlyTitle: "Early-peaking jet", earlyAt: "AT < 100 ms", earlyRatio: "AT/ET < 0.37",
+      lateTitle: "Late-peaking jet", lateAt: "AT > 100 ms", lateRatio: "AT/ET > 0.37",
+      dvi1: "DVI ≥ 0.30", dvi2: "DVI 0.25–0.29", dvi3: "DVI < 0.25",
+      outcome1a: "Normal", outcome1b: "prosthetic aortic valve",
+      outcome2: "Possible stenosis", outcome3: "Stenosis",
+    };
+  return `
+    <figure class="wiki-figure">
+      <svg viewBox="0 0 380 300" role="img" aria-label="${t.caption}">
+        <defs>
+          <marker id="av-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--text-sub)"></path>
+          </marker>
+        </defs>
+
+        <!-- Trigger -->
+        <rect x="40" y="8" width="300" height="44" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+        <text x="190" y="27" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.trigger1}</text>
+        <text x="190" y="43" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.trigger2}</text>
+
+        <!-- Split to jet-contour boxes -->
+        <line x1="190" y1="52" x2="100" y2="76" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+        <line x1="190" y1="52" x2="280" y2="76" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+
+        <!-- Jet contour -->
+        <rect x="15" y="80" width="160" height="60" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+        <text x="95" y="100" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.earlyTitle}</text>
+        <text x="95" y="116" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.earlyAt}</text>
+        <text x="95" y="131" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.earlyRatio}</text>
+
+        <rect x="205" y="80" width="160" height="60" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+        <text x="285" y="100" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.lateTitle}</text>
+        <text x="285" y="116" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.lateAt}</text>
+        <text x="285" y="131" text-anchor="middle" font-size="11" fill="var(--text-sub)">${t.lateRatio}</text>
+
+        <!-- Split to DVI boxes (middle band reachable from both sides) -->
+        <line x1="95" y1="140" x2="65" y2="176" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+        <line x1="95" y1="140" x2="190" y2="176" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+        <line x1="285" y1="140" x2="190" y2="176" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+        <line x1="285" y1="140" x2="315" y2="176" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+
+        <!-- DVI bands -->
+        <rect x="15" y="180" width="100" height="40" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+        <text x="65" y="204" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.dvi1}</text>
+        <rect x="140" y="180" width="100" height="40" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+        <text x="190" y="204" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.dvi2}</text>
+        <rect x="265" y="180" width="100" height="40" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+        <text x="315" y="204" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.dvi3}</text>
+
+        <!-- Down to outcomes -->
+        <line x1="65" y1="220" x2="65" y2="238" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+        <line x1="190" y1="220" x2="190" y2="238" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+        <line x1="315" y1="220" x2="315" y2="238" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#av-arrow)"></line>
+
+        <!-- Outcomes -->
+        <rect x="15" y="242" width="100" height="52" rx="10" fill="var(--grade-mild-bg)"></rect>
+        <text x="65" y="264" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-mild-text)">${t.outcome1a}</text>
+        <text x="65" y="279" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-mild-text)">${t.outcome1b}</text>
+
+        <rect x="140" y="242" width="100" height="52" rx="10" fill="var(--grade-moderate-bg)"></rect>
+        <text x="190" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-moderate-text)">${t.outcome2}</text>
+
+        <rect x="265" y="242" width="100" height="52" rx="10" fill="var(--grade-severe-bg)"></rect>
+        <text x="315" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-severe-text)">${t.outcome3}</text>
+      </svg>
+      <figcaption>${t.caption}</figcaption>
+    </figure>
+  `;
+}
+
 const severityInfo = {
   en: {
     mr: {
@@ -433,6 +528,18 @@ const severityInfo = {
         "Always check GLS (and LA strain) — roughly 10% of severe AS is amyloidosis.",
         "AVAi is most useful at body-size extremes (e.g. very tall/short); it underestimates in obese patients — avoid using it there.",
         "AT/ET is a risk marker. In high-gradient severe AS with preserved EF, AT/ET >0.35 predicted higher mortality rather than defining the severity. The values is lowered by high systolic blood pressure and by significant AR, and raised by low flow and reduced LV function.",
+      ],
+    },
+    avProsthetic: {
+      title: "Elevated Prosthetic AV Gradient",
+      figure: avAlgorithmFigure("en"),
+      notes: [
+        "Within a Normal result, EOAi further splits the finding: EOAi > 0.85 cm²/m² suggests a high-flow state (e.g. anemia, hyperthyroidism, an AV fistula); EOAi < 0.85 cm²/m² suggests patient-prosthesis mismatch (PPM).",
+        "Possible stenosis — other possible causes: prosthesis-patient mismatch with a narrow LVOT, an incorrectly positioned LVOT PW Doppler sample volume, or underestimation of Vmax.",
+        "Stenosis — other possible causes: valvular stenosis (e.g. thrombosis) or subvalvular stenosis.",
+        "Stenosis can also be confirmed by comparing the calculated EOA against the reference value for that valve's specific type and size — see the valve type/size picker above.",
+        "Assessing mechanical valve motion: fluoroscopy (cine angiography), CT, or TEE. Determining the cause of stenosis: CT angiography, TEE, or cardiac MRI.",
+        "This app's own verdict (in Calculated Results, once AT/ET and DVI are available) doesn't require Vmax > 3 m/s to appear, and treats the jet as early-peaking if either AT < 100 ms or AT/ET < 0.37 holds, not only when both do.",
       ],
     },
     ms: {
@@ -530,6 +637,18 @@ const severityInfo = {
         "Az AT/ET risk prediktor. High grade súlyos AS-ben megtartott EF mellett a 0,35 feletti AT/ET magasabb mortalitást jelzett előre nem a súlyosságot definiálja. Csökkenti a magas szisztolés vérnyomás és a jelentős AR, növeli az alacsony flow és a csökkent bal kamrai funkció.",
       ],
     },
+    avProsthetic: {
+      title: "Emelkedett aorta műbillentyű grádiens",
+      figure: avAlgorithmFigure("hu"),
+      notes: [
+        "Normál eredményen belül az EOAi tovább bontja a leletet: EOAi > 0,85 cm²/m² gyorsult keringésre (pl. anaemia, hyperthyreosis, AV fistula) utal; EOAi < 0,85 cm²/m² patient-prosthesis mismatch-re (PPM) utal.",
+        "Lehetséges sztenózis — lehetséges egyéb okok: műbillentyű-sztenózis szűk LVOT-val, a LVOT PW Doppler helytelen pozíciója, vagy a Vmax alulbecslése.",
+        "Sztenózis — lehetséges egyéb okok: valvuláris sztenózis (pl. trombózis) vagy szubvalvuláris sztenózis.",
+        "A sztenózis az EOA kiszámításával is igazolható, a műbillentyű típusának és méretének megfelelő referenciaértékhez viszonyítva — lásd a fenti billentyű típus/méret választót.",
+        "Mechanikus műbillentyű mozgásának megítélése: fluoroszkópia (cine angiográfia), CT, vagy TEE. A sztenózis okának megállapítása: CT angiográfia, TEE, vagy szív MRI.",
+        "Az alkalmazás saját értékelése (a Számított eredmények között, amint az AT/ET és a DVI is rendelkezésre áll) nem követeli meg a Vmax > 3 m/s feltételt, és korai csúcsú jetnek tekinti, ha az AT < 100 ms VAGY az AT/ET < 0,37 teljesül — nem csak akkor, ha mindkettő.",
+      ],
+    },
     ms: {
       title: "Mitrális stenosis",
       headers: ["Paraméter", "Enyhe", "Közepes", "Súlyos"],
@@ -576,6 +695,7 @@ const infoAriaLabels = {
     tr: "Tricuspid regurgitation severity reference",
     as: "Aortic stenosis severity reference",
     ms: "Mitral stenosis severity reference",
+    avProsthetic: "Elevated prosthetic aortic valve gradient algorithm",
   },
   hu: {
     mr: "Mitrális regurgitáció súlyossági referencia",
@@ -583,6 +703,7 @@ const infoAriaLabels = {
     tr: "Tricuspidalis regurgitáció súlyossági referencia",
     as: "Aorta stenosis súlyossági referencia",
     ms: "Mitrális stenosis súlyossági referencia",
+    avProsthetic: "Emelkedett aorta műbillentyű grádiens algoritmus",
   },
 };
 let currentInfoTopic = null;
@@ -632,10 +753,15 @@ function renderInfo(topicKey) {
   const info = severityInfo[state.language][topicKey];
   if (!info) return;
   $("#infoTitle").textContent = info.title;
+  // Most topics are a severity table; a few (e.g. avProsthetic) are a
+  // figure instead — buildSeverityTable() needs headers/rows, so only
+  // call it when they're actually present.
+  const figureHtml = info.figure || "";
+  const tableHtml = info.headers ? buildSeverityTable(info) : "";
   const notesHtml = info.notes && info.notes.length
     ? `<div class="info-notes"><h3>${uiStrings[state.language].notes}</h3><ul>${info.notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
     : "";
-  $("#infoContent").innerHTML = buildSeverityTable(info) + notesHtml;
+  $("#infoContent").innerHTML = figureHtml + tableHtml + notesHtml;
 }
 
 // Shared by both full-screen overlays (info + wiki), which are mutually

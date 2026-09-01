@@ -378,6 +378,16 @@ main {
     font-weight: 500;
     color: var(--text-sub);
   }
+  /* Groups a label with an info ("i") button right after its text, on the
+     left — unlike .head-row, where the info button sits at the far right
+     of the row instead. */
+  .switch-label-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .info-btn { margin-left: 0; }
+  }
 }
 .switch {
   position: relative;

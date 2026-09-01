@@ -255,3 +255,15 @@ The diagram itself only defines 4 of the 6 (jet-contour x DVI-band) combinations
 this is a data-quality flag, not a severity level, so it's styled neutral gray
 (`.av-verdict-neutral`), not red. Within "Normal," EOAi further splits into high-flow (>0.85) vs.
 patient-prosthesis mismatch (<0.85), per the same diagram.
+
+The source diagram itself is also reproduced as an inline-SVG figure (`avAlgorithmFigure()` in
+app.js, same technique as the wiki's figure builders — themed via CSS custom properties, outcome
+boxes reusing the same `--grade-mild/-moderate/-severe` tokens as `.av-verdict` so the reference
+figure and the app's own computed verdict read as one color language), behind a new
+`severityInfo.avProsthetic` info topic (no `headers`/`rows` — a `figure` field instead; see the
+`info.figure` branch in `renderInfo()`). The EOAi split, "other possible causes" lists, and both
+footnotes are plain `notes` prose rather than packed into the SVG, for readability/translation. Its
+info button sits in `.switch-row .switch-label-group`, right after the "Prosthetic valve" label
+text — not at the row's far right like `.head-row .info-btn` elsewhere — via a dedicated
+`.switch-label-group` wrapper in `styles.css` that overrides `.info-btn`'s default `margin-left:
+auto`, the same way `.head-row .info-btn` does for its own context.
