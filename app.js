@@ -17,11 +17,13 @@ const translations = {
     pisaRadius: "PISA radius", aliasingVelocity: "Aliasing velocity", vmax: "Vmax", vti: "VTI",
     lvotDiam: "LVOT diameter", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
     aorticVmax: "AV Vmax", meanGradient: "Mean gradient", aorticVti: "AV VTI", optional: "optional",
+    prostheticAv: "Prosthetic valve", avAt: "Acceleration time", avEt: "Ejection time", avAtEt: "AT/ET",
     mrEro: "MR ERO", mrRegVol: "MR Reg. vol.", mrRegFraction: "MR Reg. fraction",
     arEro: "AR ERO", arRegVol: "AR Reg. vol.", arRegFraction: "AR Reg. fraction",
     trEro: "TR ERO", trRegVol: "TR Reg. vol.",
     sv: "SV", svi: "SV(i)", cardiacOutput: "Cardiac output", cardiacIndex: "Cardiac Index",
-    ava: "AVA", avai: "AVAi", dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
+    ava: "AVA", avai: "AVAi", eoa: "EOA", eoai: "EOAi",
+    dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
     mvaVti: "MVA (VTI)", mvaPht: "MVA (PHT)",
     clear: "Clear All", results: "Calculated Results",
     copyReport: "Copy to clipboard", copied: "Copied to clipboard",
@@ -40,11 +42,13 @@ const translations = {
     pisaRadius: "PISA radius", aliasingVelocity: "Aliasing sebesség", vmax: "Vmax", vti: "VTI",
     lvotDiam: "LVOT átmérő", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
     aorticVmax: "AV Vmax", meanGradient: "Átlag gradiens", aorticVti: "AV VTI", optional: "opcionális",
+    prostheticAv: "Műbillentyű", avAt: "Akceleraciós idő", avEt: "Ejekciós idő", avAtEt: "AT/ET",
     mrEro: "MR ERO", mrRegVol: "MR Reg. volumen", mrRegFraction: "MR Reg. frakció",
     arEro: "AR ERO", arRegVol: "AR Reg. volumen", arRegFraction: "AR Reg. frakció",
     trEro: "TR ERO", trRegVol: "TR Reg. volumen",
     sv: "SV", svi: "SV(i)", cardiacOutput: "Perctérfogat", cardiacIndex: "Cardiac Index",
-    ava: "AVA", avai: "AVAi", dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
+    ava: "AVA", avai: "AVAi", eoa: "EOA", eoai: "EOAi",
+    dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
     mvaVti: "MVA (VTI)", mvaPht: "MVA (PHT)",
     clear: "Összes törlése", results: "Számított eredmények",
     copyReport: "Másolás vágólapra", copied: "Vágólapra másolva",
@@ -215,6 +219,20 @@ const calculateMVAPht = (mvPht, lang) => {
   if (mvPht && !isNaN(p) && p > 0) return 220 / p;
   return null;
 };
+// Prosthetic AV: AT/ET ratio (acceleration time / ejection time), used
+// alongside EOA/EOAi (the same AVA/AVAi formula, relabeled — see gradeFns
+// and computeResults) when the "Prosthetic valve" toggle is on.
+/**
+ * @param {string} at
+ * @param {string} et
+ * @param {string} lang
+ * @returns {number | null}
+ */
+const calculateAtEt = (at, et, lang) => {
+  const a = parseNumber(at, lang), e = parseNumber(et, lang);
+  if (at && et && !isNaN(a) && !isNaN(e) && a > 0 && e > 0) return a / e;
+  return null;
+};
 
 // ---- severity grading ----
 // Grading bands transcribed from Echo checklist.xlsx.
@@ -242,6 +260,12 @@ const gradeFns = {
   mvaPht: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
   dviVti: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
   dviVmax: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
+  // Prosthetic AV, per user direction: AT/ET < 0.37 is abnormal (reduced),
+  // >= 0.37 is normal. No "eoa"/"eoai" entry here on purpose — EOA/EOAi
+  // (prosthetic AV) reuses the AVA/AVAi *values* but must not be graded
+  // with the native-valve ava/avai cutoffs above; real EOA/EOAi cutoffs
+  // are still to be defined, so they render with no severity badge for now.
+  avAtEt: v => v < 0.37 ? "reduced" : "normal",
   // Only a single cutoff is defined for this metric (per user direction):
   // below 1 reads as mild, at/above 1 reads as severe, moderate is unused.
   mvVtiLvotVti: v => v < 1 ? "mild" : "severe",
@@ -853,9 +877,12 @@ const fieldNames = [
   "mrPisaRadius","mrAliasingVelocity","mrVmax","mrVti","mvVtiPw","mvVtiCw","mvPht",
   "arPisaRadius","arAliasingVelocity","arVmax","arVti",
   "trPisaRadius","trAliasingVelocity","trVmax","trVti",
-  "lvotDiam","lvotVti","lvotVmax","aorticVmax","meanGradient","aorticVti"
+  "lvotDiam","lvotVti","lvotVmax","aorticVmax","meanGradient","aorticVti","avAt","avEt"
 ];
 fieldNames.forEach(f => state[f] = "");
+// Prosthetic aortic valve mode — separate from fieldNames since it's a
+// boolean toggle, not a text input field.
+state.prostheticAV = false;
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -885,6 +912,8 @@ const fieldDefs = {
   aorticVmax: { label: "aorticVmax", unit: "m/s", optional: true },
   meanGradient: { label: "meanGradient", unit: "mmHg", optional: true },
   aorticVti: { label: "aorticVti", unit: "cm" },
+  avAt: { label: "avAt", unit: "ms" },
+  avEt: { label: "avEt", unit: "ms" },
   arPisaRadius: { label: "pisaRadius", unit: "mm" },
   arAliasingVelocity: { label: "aliasingVelocity", unit: "cm/s" },
   arVmax: { label: "vmax", unit: "m/s" },
@@ -1008,6 +1037,12 @@ $("#bsaModeToggle").addEventListener("click", () => {
   computeResults();
 });
 
+$("#prostheticAvToggle").addEventListener("change", (e) => {
+  state.prostheticAV = /** @type {HTMLInputElement} */ (e.target).checked;
+  $("#avProstheticFields").hidden = !state.prostheticAV;
+  computeResults();
+});
+
 $("#langToggle").addEventListener("click", () => {
   state.language = state.language === "en" ? "hu" : "en";
   applyTranslations();
@@ -1091,10 +1126,14 @@ function computeResults() {
   const svi = calculateSVI(sv, bsa);
   const cardiacOutput = calculateCardiacOutput(sv, s.heartRate, lang);
   const cardiacIndex = calculateCardiacIndex(cardiacOutput, bsa);
+  // AVA/AVAi: same formula and value whether the valve is native or
+  // prosthetic — see gradeFns.avAtEt for why "eoa"/"eoai" (below) don't
+  // get graded the same way.
   const ava = calculateAVA(s.lvotDiam, s.lvotVti, s.aorticVti, lang);
   const avai = calculateAVAI(ava, bsa);
   const dviVti = calculateDVIVti(s.lvotVti, s.aorticVti, lang);
   const dviVmax = calculateDVIVmax(s.lvotVmax, s.aorticVmax, lang);
+  const avAtEt = s.prostheticAV ? calculateAtEt(s.avAt, s.avEt, lang) : null;
   let mvVtiLvotVti = null;
   if (s.mvVtiPw && s.lvotVti) {
     const r = parseFloat(s.mvVtiPw) / parseFloat(s.lvotVti);
@@ -1114,10 +1153,11 @@ function computeResults() {
     ["arRegFraction", arRegFraction, "%"],
     ["trEro", trEro, "cm²"],
     ["trRegVol", trRegVol, "ml"],
-    ["ava", ava, "cm²"],
-    ["avai", avai, "cm²/m²"],
+    [s.prostheticAV ? "eoa" : "ava", ava, "cm²"],
+    [s.prostheticAV ? "eoai" : "avai", avai, "cm²/m²"],
     ["dviVti", dviVti, ""],
     ["dviVmax", dviVmax, ""],
+    ["avAtEt", avAtEt, ""],
     ["mvVtiLvotVti", mvVtiLvotVti === null ? null : parseFloat(mvVtiLvotVti.replace(",", ".")), ""],
     ["mvaVti", mvaVti, "cm²"],
     ["mvaPht", mvaPht, "cm²"],
@@ -1146,7 +1186,7 @@ function computeResults() {
   $("#resultsCard").hidden = !any;
 
   lastResults = { bsa, mrEro, mrRegVol, mrRegFraction, arEro, arRegVol, arRegFraction,
-    trEro, trRegVol, sv, svi, cardiacOutput, cardiacIndex, ava, avai, dviVti, dviVmax, mvVtiLvotVti,
+    trEro, trRegVol, sv, svi, cardiacOutput, cardiacIndex, ava, avai, dviVti, dviVmax, avAtEt, mvVtiLvotVti,
     mvaVti, mvaPht };
 }
 
@@ -1224,8 +1264,10 @@ function buildReportText() {
   if (lvotVti !== null) lvotLines.push(`${t.lvotVti}: ${lvotVti} cm`);
   const avVti = rawInput(s.aorticVti, lang);
   if (avVti !== null) lvotLines.push(`AV VTI: ${avVti} cm`);
-  if (lastResults.ava !== null) lvotLines.push(`${t.ava}: ${fmt(lastResults.ava)} cm²`);
-  if (lastResults.avai !== null) lvotLines.push(`${t.avai}: ${fmt(lastResults.avai)} cm²/m²`);
+  // Same AVA/AVAi values whichever label is showing (see computeResults).
+  const avaLabel = s.prostheticAV ? t.eoa : t.ava, avaiLabel = s.prostheticAV ? t.eoai : t.avai;
+  if (lastResults.ava !== null) lvotLines.push(`${avaLabel}: ${fmt(lastResults.ava)} cm²`);
+  if (lastResults.avai !== null) lvotLines.push(`${avaiLabel}: ${fmt(lastResults.avai)} cm²/m²`);
   const hasDviVti = lastResults.dviVti !== null;
   const hasDviVmax = lastResults.dviVmax !== null;
   if (hasDviVti && hasDviVmax) {
@@ -1235,6 +1277,11 @@ function buildReportText() {
   } else if (hasDviVmax) {
     lvotLines.push(`DVI: ${fmt(lastResults.dviVmax)}`);
   }
+  // Prosthetic AV only: AT is echoed as typed, AT/ET is the calculated
+  // ratio — ET itself isn't echoed (per user direction).
+  const avAt = rawInput(s.avAt, lang);
+  if (avAt !== null) lvotLines.push(`${t.avAt}: ${avAt} ms`);
+  if (lastResults.avAtEt !== null) lvotLines.push(`${t.avAtEt}: ${fmt(lastResults.avAtEt)}`);
   if (lastResults.svi !== null) lvotLines.push(`${t.svi}: ${fmt(lastResults.svi)} ml/m²`);
   if (lastResults.cardiacOutput !== null) lvotLines.push(`CO: ${fmt(lastResults.cardiacOutput)} l/min`);
   if (lastResults.cardiacIndex !== null) lvotLines.push(`CI: ${fmt(lastResults.cardiacIndex)} l/min/m²`);

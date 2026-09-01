@@ -129,6 +129,14 @@
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
           <div class="field-stack sub-body" style="margin-top:12px;" data-fields="aorticVmax,meanGradient,aorticVti"></div>
+          <div class="switch-row" style="margin-top:12px;padding:0 4px;">
+            <span class="switch-label" data-t="prostheticAv"></span>
+            <label class="switch">
+              <input type="checkbox" id="prostheticAvToggle">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+          <div class="field-stack sub-body" hidden style="margin-top:12px;" data-fields="avAt,avEt" id="avProstheticFields"></div>
         </div>
 
         <!-- AR PISA subgroup -->

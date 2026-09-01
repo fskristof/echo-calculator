@@ -126,7 +126,16 @@ Organized top-to-bottom roughly as:
 7. **`computeResults()`** — the central pipeline: reads `state`, calls the calculation functions in
    dependency order (e.g. BSA before SVI/AVAi, SV before cardiac output), grades each result via
    `gradeFns`, and renders the results list into `#resultsList`. This is the function to trace when
-   adding a new derived value or changing how an existing one depends on inputs.
+   adding a new derived value or changing how an existing one depends on inputs. The prosthetic aortic
+   valve toggle (`state.prostheticAV`, wired via `#prostheticAvToggle`) is the pattern to copy for any
+   future "this changes which fields/labels are relevant" switch: it doesn't change the AVA/AVAi
+   *values* (`calculateAVA`/`calculateAVAI` are unaware of it) — `computeResults()` just picks a
+   different result-row key (`"eoa"`/`"eoai"` vs `"ava"`/`"avai"`) so the label changes, and there's
+   deliberately no `gradeFns.eoa`/`.eoai` entry (see the comment above `gradeFns.avAtEt`), so those
+   rows render with no severity badge until real prosthetic-valve cutoffs replace the native ones. The
+   on/off switch itself (`.switch`/`.switch-row` in `styles.css`) is a real checkbox styled as a track +
+   thumb — reuse that markup pattern for any future flip-switch control (e.g. a mechanical/biological
+   valve-type switch) rather than inventing a new one.
 8. **Report text / clipboard** (`buildReportText`, `rawInput`, `pisaLine`, `legacyCopy`,
    `flashCopyButton`) — formats `lastResults` and raw field values into a plain-text report for the
    "Copy to Report" button, with a `document.execCommand`-based fallback for browsers/contexts without
@@ -173,3 +182,20 @@ thing to check** — before assuming something is actually broken:
 - Bump the `sw.js` `CACHE` version on any shipped change to `index.html`, `styles.css`, `app.js`,
   `wiki-data.js`, a `wiki-topics/*.js` file, `manifest.json`, or `sw.js` itself — and if you add a new
   file like these, add it to `sw.js`'s `PRECACHE_URLS` too.
+
+## Prosthetic aortic valve — deferred work
+
+The "Prosthetic valve" toggle (AV subgroup) currently ships with two pieces intentionally incomplete,
+both by user direction — don't treat either as an oversight:
+
+- **EOA/EOAi have no severity badge.** `gradeFns` has no `eoa`/`eoai` entry on purpose (native-valve
+  AVA/AVAi cutoffs don't apply to a prosthetic valve). Add real prosthetic EOA/EOAi cutoffs to
+  `gradeFns` (and matching rows to a prosthetic-valve reference table, likely a new `severityInfo`
+  entry) once available.
+- **DVI's existing cutoffs (`gradeFns.dviVti`/`.dviVmax`) are native-valve-only.** For a prosthetic
+  valve, DVI should grade "normal" at/above 0.3 and "reduced" below it (a two-band scheme, unlike the
+  native three-band one) — not yet implemented. When adding this, branch `computeResults()`'s DVI
+  grading on `state.prostheticAV` the same way the AVA/AVAi *label* (not value) is picked.
+
+Also still planned, not yet started: a valve type + size selector (populated from a guideline
+reference table) that, once both are picked, shows that specific valve's normal reference values.
