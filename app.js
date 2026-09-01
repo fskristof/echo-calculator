@@ -22,7 +22,8 @@ const translations = {
     avVerdictTitle: "Prosthetic AV assessment", avNormal: "Normal prosthetic aortic valve",
     avPossibleStenosis: "Possible stenosis", avStenosis: "Stenosis",
     avDiscordant: "Discordant findings — double-check measurements",
-    avHighFlow: "High-flow state (e.g. accelerated circulation)", avPpm: "Patient-prosthesis mismatch (PPM)",
+    avHighFlow: "Normal prosthetic valve function without PPM (high-flow state, e.g. accelerated circulation)",
+    avPpm: "Normal prosthetic valve function with PPM (patient-prosthesis mismatch)",
     mrEro: "MR ERO", mrRegVol: "MR Reg. vol.", mrRegFraction: "MR Reg. fraction",
     arEro: "AR ERO", arRegVol: "AR Reg. vol.", arRegFraction: "AR Reg. fraction",
     trEro: "TR ERO", trRegVol: "TR Reg. vol.",
@@ -50,9 +51,10 @@ const translations = {
     prostheticAv: "Műbillentyű", avAt: "Akceleraciós idő", avEt: "Ejekciós idő", avAtEt: "AT/ET",
     valveType: "Billentyű típusa", mechanical: "Mechanikus", biological: "Biológiai", valveSize: "Billentyű mérete",
     avVerdictTitle: "Műbillentyű értékelés", avNormal: "Normál aorta műbillentyű",
-    avPossibleStenosis: "Lehetséges sztenózis", avStenosis: "Sztenózis",
+    avPossibleStenosis: "Lehetséges stenosis", avStenosis: "Stenosis",
     avDiscordant: "Ellentmondó eredmények — ellenőrizd a méréseket",
-    avHighFlow: "Gyorsult keringés", avPpm: "Patient-prosthesis mismatch (PPM)",
+    avHighFlow: "Normál műbillentyű-funkció PPM nélkül (gyorsult keringés)",
+    avPpm: "Normál műbillentyű-funkció PPM-mel (patient-prosthesis mismatch)",
     mrEro: "MR ERO", mrRegVol: "MR Reg. volumen", mrRegFraction: "MR Reg. frakció",
     arEro: "AR ERO", arRegVol: "AR Reg. volumen", arRegFraction: "AR Reg. frakció",
     trEro: "TR ERO", trRegVol: "TR Reg. volumen",
@@ -324,7 +326,7 @@ const gradeLabels = {
     possibleStenosis: "Possible stenosis", stenosis: "Stenosis" },
   hu: { mild: "Enyhe", moderate: "Közepes", severe: "Súlyos", massive: "Masszív", torrential: "Torrentialis",
     normal: "Normális", reduced: "Csökkent", mildlyReduced: "Enyhén csökkent", elevated: "Emelkedett",
-    possibleStenosis: "Lehetséges sztenózis", stenosis: "Sztenózis" },
+    possibleStenosis: "Lehetséges stenosis", stenosis: "Stenosis" },
 };
 const gradeFns = {
   mrEro: v => v < 0.2 ? "mild" : v <= 0.4 ? "moderate" : "severe",
@@ -421,7 +423,7 @@ function avAlgorithmFigure(lang) {
       lateTitle: "Késői csúcs", lateAt: "AT > 100 ms", lateRatio: "AT/ET > 0,37",
       dvi1: "DVI ≥ 0,30", dvi2: "DVI 0,25–0,29", dvi3: "DVI < 0,25",
       outcome1a: "Normál", outcome1b: "aorta műbillentyű",
-      outcome2: "Lehetséges sztenózis", outcome3: "Sztenózis",
+      outcome2: "Lehetséges stenosis", outcome3: "Stenosis",
     }
     : {
       caption: "The ASE 2024 decision algorithm for an elevated prosthetic aortic valve gradient.",
@@ -714,7 +716,7 @@ const severityInfo = {
       title: "Emelkedett aorta műbillentyű grádiens",
       tableBeforeFigure: {
         heading: "5. táblázat — Aorta műbillentyűk Doppler paraméterei",
-        headers: ["Paraméter", "Normális", "Lehetséges sztenózis", "Sztenózis"],
+        headers: ["Paraméter", "Normális", "Lehetséges stenosis", "Stenosis"],
         rows: [
           ["Jet sebességi kontúr", "Háromszög, korai csúcsú", "Háromszög-köztes", "Kerekített, szimmetrikus"],
           ["Akcelerációs idő (ms)", "<80", "80–100", ">100"],
@@ -735,15 +737,15 @@ const severityInfo = {
         ],
       },
       notes: [
-        "Az 5. táblázat (fent) szerint a jelentős sztenózishoz legalább egy flow-függő paraméter (sebesség, átlag grádiens) és egy flow-független paraméter (EOA vagy DVI) szükséges; csak SAVR-ra vonatkozik — a guideline külön TAVI kiindulási-értékhez viszonyított kritériumait itt nem közöljük, mivel az alkalmazás nem követ soros vizsgálatokat.",
+        "Az 5. táblázat (fent) szerint a jelentős stenosishoz legalább egy flow-függő paraméter (sebesség, átlag grádiens) és egy flow-független paraméter (EOA vagy DVI) szükséges; csak SAVR-ra vonatkozik — a guideline külön TAVI kiindulási-értékhez viszonyított kritériumait itt nem közöljük, mivel az alkalmazás nem követ soros vizsgálatokat.",
         "Az alkalmazás saját Számított eredményei a DVI-t, az AT-t és az AT/ET-t az 5. táblázat SAVR határértékeivel értékelik; az EOA-t a kiválasztott műbillentyű típus/méret saját referencia EOA ± SD értékéhez viszonyítva (lásd a fenti választót), ugyanazon táblázat ±1 SD / ±2 SD sávjaival — és csak akkor jelenik meg, ha műbillentyű és méret is ki van választva.",
         "Az EOAi értékelése a 7. táblázat (az algoritmus alatt) alapján történik, amely a patient-prosthesis mismatch határértékeit a BMI-től (háttérben, testsúlyból és testmagasságból számítva) teszi függővé: >0,85 cm²/m² normális 30 kg/m² alatti BMI mellett (>0,70 cm²/m² 30 kg/m² fölött), egészen ≤0,65 cm²/m²-ig (≤0,55 cm²/m² 30 kg/m² BMI fölött) súlyos mismatch esetén.",
         "Normál eredményen belül az alábbi, alkalmazás által adott értékelésnél az EOAi tovább bontja a leletet: EOAi > 0,85 cm²/m² gyorsult keringésre (pl. anaemia, hyperthyreosis, AV fistula) utal; EOAi < 0,85 cm²/m² patient-prosthesis mismatch-re (PPM) utal.",
-        "Lehetséges sztenózis — lehetséges egyéb okok: műbillentyű-sztenózis szűk LVOT-val, a LVOT PW Doppler helytelen pozíciója, vagy a Vmax alulbecslése.",
-        "Sztenózis — lehetséges egyéb okok: valvuláris sztenózis (pl. trombózis) vagy szubvalvuláris sztenózis.",
-        "Mechanikus műbillentyű mozgásának megítélése: fluoroszkópia (cine angiográfia), CT, vagy TEE. A sztenózis okának megállapítása: CT angiográfia, TEE, vagy szív MRI.",
+        "Lehetséges stenosis — lehetséges egyéb okok: műbillentyű-stenosis szűk LVOT-val, a LVOT PW Doppler helytelen pozíciója, vagy a Vmax alulbecslése.",
+        "Stenosis — lehetséges egyéb okok: valvuláris stenosis (pl. trombózis) vagy szubvalvuláris stenosis.",
+        "Mechanikus műbillentyű mozgásának megítélése: fluoroszkópia (cine angiográfia), CT, vagy TEE. A stenosis okának megállapítása: CT angiográfia, TEE, vagy szív MRI.",
         "Az alkalmazás saját értékelése (a Számított eredmények között, amint az AT/ET és a DVI is rendelkezésre áll) nem követeli meg a Vmax > 3 m/s feltételt, és késői csúcsú jetnek tekinti, ha az AT > 100 ms VAGY az AT/ET > 0,37 teljesül — nem csak akkor, ha mindkettő.",
-        "A 6. táblázat (fent, strukturális műbillentyű-degeneráció) soros vizsgálatokat hasonlít össze, nem abszolút súlyossági fokozatot állapít meg, ezért nincs \"Normális\" oszlopa — a „Lehetséges SVD” határérték alatti változás egyszerűen nem SVD. Kombinált sztenózis és regurgitáció esetén az SVD alacsonyabb határértékeknél is fennállhat.",
+        "A 6. táblázat (fent, strukturális műbillentyű-degeneráció) soros vizsgálatokat hasonlít össze, nem abszolút súlyossági fokozatot állapít meg, ezért nincs \"Normális\" oszlopa — a „Lehetséges SVD” határérték alatti változás egyszerűen nem SVD. Kombinált stenosis és regurgitáció esetén az SVD alacsonyabb határértékeknél is fennállhat.",
       ],
     },
     ms: {
