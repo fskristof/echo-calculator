@@ -17,7 +17,9 @@ few files, loaded via plain `<link>`/`<script src>` tags — no bundler, no modu
 - `styles.css` — all styling (was an inline `<style>` block).
 - `wiki-data.js` — Echo Wiki topic *metadata*: `wikiCategories`, `wikiTopics` (id/category/title/
   summary/keywords/sources — everything the list view and search need eagerly). Loaded before
-  `app.js`. Does **not** hold topic bodies — see `wiki-topics/` below.
+  `app.js`. Does **not** hold topic bodies — see `wiki-topics/` below. **If wiki search stops finding
+  a topic someone expects it to** (a support complaint like "I searched for X and nothing came up"),
+  see "Wiki search troubleshooting" further down before assuming it's a bug.
 - `wiki-topics/<id>.js` — one file per "deep" wiki topic, holding its `body` HTML and any inline-SVG
   figure builders it embeds. Loaded on demand only when that topic is opened (`loadWikiTopicBody()` in
   `app.js`), not up front — keeps the eager page-load payload flat as the wiki grows. Still listed in
@@ -131,6 +133,28 @@ Organized top-to-bottom roughly as:
    `navigator.clipboard`.
 9. Card/subgroup expand-collapse, info-overlay, theme toggle, and other DOM event wiring live at the
    bottom of the file.
+
+## Wiki search troubleshooting
+
+Since the lazy-body-loading change (search for "growth-readiness" in git log), wiki search can only
+match a topic's body text once that topic has actually been opened this session — it can no longer
+scan every topic's full body up front, only title/keywords/summary (see the comment above
+`wikiTopicMatchesQuery` in `app.js` and the one above `wikiTopics` in `wiki-data.js`). **If the user
+reports "I searched for a term and the topic I expected didn't show up," this trade-off is the first
+thing to check** — before assuming something is actually broken:
+
+1. Check whether the missing term appears only in that topic's `body` (in `wiki-topics/<id>.js`) and
+   not in its `title`, `keywords`, or `summary` (in `wiki-data.js`). If so, this is that trade-off, not
+   a bug.
+2. **First fix to try**: add the missing term (and likely synonyms/related terms) to that topic's
+   `keywords` in `wiki-data.js`. Cheap, low-risk, and fixes that specific search gap immediately.
+3. **If this keeps happening repeatedly** across many topics (keywords aren't keeping up, or curating
+   them per-topic is becoming a burden) — that's the sign the lazy-loading trade-off isn't paying for
+   itself for how this app is actually used, and it's worth reverting `wiki-data.js`/`wiki-topics/`
+   back to the original single-file design (all topics' full `body` eagerly in one `wikiTopics` array,
+   like before this change), which searches full body text for every topic unconditionally. That
+   reintroduces the "editing one topic re-downloads/re-parses everything" cost this change was meant
+   to avoid — worth it only if it actually happens and search correctness matters more than that cost.
 
 ## Conventions to follow when editing
 
