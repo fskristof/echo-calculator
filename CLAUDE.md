@@ -223,7 +223,35 @@ mechanical/biological `category` was *inferred* from general knowledge rather th
 an explicit label in the source table (the table doesn't repeat a mechanism label for every row in a
 manufacturer group, and a few manufacturers — e.g. ATS — make both mechanical and biological models
 under the same name). If a user reports a valve showing under the wrong mechanical/biological switch
-position, check that list first.
+position, check that list first. Every one of these inferred entries has since been cross-checked
+against another prosthetic-valve reference app's own type lists and confirmed correct; a couple of
+valves that app covers (e.g. Carbomedics Orbis, Medtronic Open Pivot AP/Standard, CE Magna 3000/Ease
+3300, CE STD 2625, Crown, Freestyle Root) aren't in the Zoghbi table at all and so aren't in this file
+yet — add them as their own entries (tag the source in a comment, same as the Zoghbi citation at the
+top) if/when reference values for them are available.
 
-Also still planned, not yet started: a valve type + size selector (populated from a guideline
-reference table) that, once both are picked, shows that specific valve's normal reference values.
+### Elevated-gradient verdict (`calculateAvVerdict`/`renderAvVerdict`)
+
+Also implemented: an automatic verdict ("Normal prosthetic aortic valve" / "Possible stenosis" /
+"Stenosis" / "Discordant findings") from the same Zoghbi guideline's "elevated aortic prosthetic valve
+gradient" decision algorithm, using AT, AT/ET, and DVI. Renders as its own colored callout
+(`.av-verdict` in `styles.css`) below the numeric results, since a category doesn't fit the
+value+unit `.result-row` shape the rest of `computeResults()` uses.
+
+Two departures from the source diagram, both by user direction — don't "fix" them back to the
+diagram's literal reading:
+- **Not gated on Vmax > 3 m/s** (the diagram's own entry condition) — a reduced LV EF can make that
+  threshold too low, and most users won't enter AV Vmax anyway. Instead it fires whenever AT is
+  entered and both AT/ET and DVI are calculable, regardless of Vmax.
+- **Jet contour (early vs. late peaking) uses OR, not AND**, between the AT and AT/ET criteria: early
+  if `AT < 100 OR AT/ET < 0.37`, otherwise late. This isn't just a looser threshold — it collapses
+  what the diagram leaves as an undefined third case (the two criteria disagreeing) into a clean
+  two-way split, since "late" only holds when *neither* early-criterion is true (i.e. AT >= 100 AND
+  AT/ET >= 0.37, satisfying the late condition via De Morgan's law). See the comment above
+  `calculateAvVerdict` for the full reasoning.
+
+The diagram itself only defines 4 of the 6 (jet-contour x DVI-band) combinations; the other two
+(early + DVI < 0.25, late + DVI >= 0.30) render as "discordant" rather than guessing an outcome —
+this is a data-quality flag, not a severity level, so it's styled neutral gray
+(`.av-verdict-neutral`), not red. Within "Normal," EOAi further splits into high-flow (>0.85) vs.
+patient-prosthesis mismatch (<0.85), per the same diagram.

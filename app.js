@@ -19,6 +19,10 @@ const translations = {
     aorticVmax: "AV Vmax", meanGradient: "Mean gradient", aorticVti: "AV VTI", optional: "optional",
     prostheticAv: "Prosthetic valve", avAt: "Acceleration time", avEt: "Ejection time", avAtEt: "AT/ET",
     valveType: "Valve type", mechanical: "Mechanical", biological: "Biological", valveSize: "Valve size",
+    avVerdictTitle: "Prosthetic AV assessment", avNormal: "Normal prosthetic aortic valve",
+    avPossibleStenosis: "Possible stenosis", avStenosis: "Stenosis",
+    avDiscordant: "Discordant findings — double-check measurements",
+    avHighFlow: "High-flow state (e.g. accelerated circulation)", avPpm: "Patient-prosthesis mismatch (PPM)",
     mrEro: "MR ERO", mrRegVol: "MR Reg. vol.", mrRegFraction: "MR Reg. fraction",
     arEro: "AR ERO", arRegVol: "AR Reg. vol.", arRegFraction: "AR Reg. fraction",
     trEro: "TR ERO", trRegVol: "TR Reg. vol.",
@@ -45,6 +49,10 @@ const translations = {
     aorticVmax: "AV Vmax", meanGradient: "Átlag gradiens", aorticVti: "AV VTI", optional: "opcionális",
     prostheticAv: "Műbillentyű", avAt: "Akceleraciós idő", avEt: "Ejekciós idő", avAtEt: "AT/ET",
     valveType: "Billentyű típusa", mechanical: "Mechanikus", biological: "Biológiai", valveSize: "Billentyű mérete",
+    avVerdictTitle: "Műbillentyű értékelés", avNormal: "Normál aorta műbillentyű",
+    avPossibleStenosis: "Lehetséges sztenózis", avStenosis: "Sztenózis",
+    avDiscordant: "Ellentmondó eredmények — ellenőrizd a méréseket",
+    avHighFlow: "Gyorsult keringés", avPpm: "Patient-prosthesis mismatch (PPM)",
     mrEro: "MR ERO", mrRegVol: "MR Reg. volumen", mrRegFraction: "MR Reg. frakció",
     arEro: "AR ERO", arRegVol: "AR Reg. volumen", arRegFraction: "AR Reg. frakció",
     trEro: "TR ERO", trRegVol: "TR Reg. volumen",
@@ -234,6 +242,57 @@ const calculateAtEt = (at, et, lang) => {
   const a = parseNumber(at, lang), e = parseNumber(et, lang);
   if (at && et && !isNaN(a) && !isNaN(e) && a > 0 && e > 0) return a / e;
   return null;
+};
+
+// Prosthetic AV "elevated gradient" diagnostic algorithm (Zoghbi et al.
+// 2024, same guideline as prosthetic-data/aortic-valves.js). Per user
+// direction this is NOT gated on Vmax > 3 m/s (the algorithm's own entry
+// condition) — a reduced LV EF can make that threshold too low, and most
+// users won't enter AV Vmax anyway — so it fires whenever AT/ET and DVI
+// are both available, regardless of Vmax.
+//
+// Jet contour (early vs. late peaking): the source diagram draws this as
+// AT < 100ms AND AT/ET < 0.37 for "early," AT > 100ms AND AT/ET > 0.37 for
+// "late" — but per user direction this is OR, not AND: early if EITHER
+// criterion says early. This isn't just a looser threshold — it collapses
+// what would otherwise be an undefined third case (the two criteria
+// disagreeing) into a clean two-way split: "late" only when NEITHER
+// early-criterion holds, i.e. AT >= 100 AND AT/ET >= 0.37 (satisfying the
+// late condition too, via De Morgan's law). So every AT/AT-ET pair lands
+// in exactly one contour, with no leftover ambiguous case at this step.
+//
+// The diagram itself only draws four of the six (contour x DVI-band)
+// combinations — early+>=0.30 (normal), early-or-late+0.25-0.29 (possible
+// stenosis), late+<0.25 (stenosis). The other two (early+<0.25,
+// late+>=0.30) aren't addressed by the source algorithm at all; per user
+// direction these render as "discordant" rather than guessing an outcome.
+//
+// Picks dviVti over dviVmax when both are present (matching the rest of
+// the app's own preference — see buildReportText's DVI line).
+/**
+ * @param {string} at
+ * @param {number | null} atEt
+ * @param {number | null} dviVti
+ * @param {number | null} dviVmax
+ * @param {number | null} eoai
+ * @param {string} lang
+ * @returns {{ category: string, note: string | null } | null}
+ */
+const calculateAvVerdict = (at, atEt, dviVti, dviVmax, eoai, lang) => {
+  const atNum = parseNumber(at, lang);
+  if (!at || isNaN(atNum) || atNum <= 0 || atEt === null) return null;
+  const dvi = dviVti !== null ? dviVti : dviVmax;
+  if (dvi === null) return null;
+
+  const early = atNum < 100 || atEt < 0.37;
+  let category;
+  if (dvi >= 0.30) category = early ? "normal" : "discordant";
+  else if (dvi >= 0.25) category = "possibleStenosis";
+  else category = early ? "discordant" : "stenosis";
+
+  let note = null;
+  if (category === "normal" && eoai !== null) note = eoai > 0.85 ? "highFlow" : "ppm";
+  return { category, note };
 };
 
 // ---- severity grading ----
@@ -1262,6 +1321,21 @@ function fmt(value) {
   return state.language === "hu" ? value.toFixed(2).replace(".", ",") : value.toFixed(2);
 }
 
+// A category, not a value+unit, so it doesn't fit the .result-row shape
+// the numeric rows above use — rendered as its own colored callout
+// instead. "discordant" is deliberately its own neutral color, not red —
+// it's a data-quality flag ("recheck your inputs"), not a severity level,
+// so it shouldn't read as alarming as an actual stenosis finding.
+const avVerdictColor = { normal: "normal", possibleStenosis: "caution", stenosis: "danger", discordant: "neutral" };
+function renderAvVerdict(verdict, lang) {
+  const t = translations[lang];
+  const el = document.createElement("div");
+  el.className = `av-verdict av-verdict-${avVerdictColor[verdict.category]}`;
+  const noteHtml = verdict.note ? `<p>${t["av" + verdict.note[0].toUpperCase() + verdict.note.slice(1)]}</p>` : "";
+  el.innerHTML = `<h3>${t.avVerdictTitle}</h3><p class="av-verdict-headline">${t["av" + verdict.category[0].toUpperCase() + verdict.category.slice(1)]}</p>${noteHtml}`;
+  return el;
+}
+
 function computeResults() {
   const s = state, lang = s.language;
   const bsa = calculateBSA(s.weight, s.height, s.bsaManualMode, s.bsaManualValue, lang);
@@ -1285,6 +1359,7 @@ function computeResults() {
   const dviVti = calculateDVIVti(s.lvotVti, s.aorticVti, lang);
   const dviVmax = calculateDVIVmax(s.lvotVmax, s.aorticVmax, lang);
   const avAtEt = s.prostheticAV ? calculateAtEt(s.avAt, s.avEt, lang) : null;
+  const avVerdict = s.prostheticAV ? calculateAvVerdict(s.avAt, avAtEt, dviVti, dviVmax, avai, lang) : null;
   let mvVtiLvotVti = null;
   if (s.mvVtiPw && s.lvotVti) {
     const r = parseFloat(s.mvVtiPw) / parseFloat(s.lvotVti);
@@ -1338,11 +1413,15 @@ function computeResults() {
     row.innerHTML = `<span class="label">${t[key]}</span>${badge}<span class="value">${formatted}${unit ? " " + unit : ""}</span>`;
     list.appendChild(row);
   });
+  // Not a graded numeric row like the ones above (it's a category, not a
+  // value+unit), so it's appended directly rather than going through the
+  // rows/gradeFn machinery — see renderAvVerdict().
+  if (avVerdict) { any = true; list.appendChild(renderAvVerdict(avVerdict, lang)); }
   $("#resultsCard").hidden = !any;
 
   lastResults = { bsa, mrEro, mrRegVol, mrRegFraction, arEro, arRegVol, arRegFraction,
-    trEro, trRegVol, sv, svi, cardiacOutput, cardiacIndex, ava, avai, dviVti, dviVmax, avAtEt, mvVtiLvotVti,
-    mvaVti, mvaPht };
+    trEro, trRegVol, sv, svi, cardiacOutput, cardiacIndex, ava, avai, dviVti, dviVmax, avAtEt, avVerdict,
+    mvVtiLvotVti, mvaVti, mvaPht };
 }
 
 // ---- report text for "Copy to Report" ----
@@ -1437,6 +1516,12 @@ function buildReportText() {
   const avAt = rawInput(s.avAt, lang);
   if (avAt !== null) lvotLines.push(`${t.avAt}: ${avAt} ms`);
   if (lastResults.avAtEt !== null) lvotLines.push(`${t.avAtEt}: ${fmt(lastResults.avAtEt)}`);
+  if (lastResults.avVerdict) {
+    const v = lastResults.avVerdict;
+    const category = t["av" + v.category[0].toUpperCase() + v.category.slice(1)];
+    const note = v.note ? ` (${t["av" + v.note[0].toUpperCase() + v.note.slice(1)]})` : "";
+    lvotLines.push(`${t.avVerdictTitle}: ${category}${note}`);
+  }
   if (lastResults.svi !== null) lvotLines.push(`${t.svi}: ${fmt(lastResults.svi)} ml/m²`);
   if (lastResults.cardiacOutput !== null) lvotLines.push(`CO: ${fmt(lastResults.cardiacOutput)} l/min`);
   if (lastResults.cardiacIndex !== null) lvotLines.push(`CI: ${fmt(lastResults.cardiacIndex)} l/min/m²`);
