@@ -847,49 +847,12 @@
       <div class="card-body" hidden>
         <button class="bsa-toggle" type="button" id="bsaModeToggle" data-t="bsaManual">Enter BSA manually</button>
 
-        <div id="bsaAutoFields">
-          <div class="field">
-            <label data-t="weight"></label>
-            <div class="field-value">
-              <div class="field-input-wrap">
-                <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="weight">
-                <span class="field-unit">kg</span>
-              </div>
-            </div>
-          </div>
-          <div class="field">
-            <label data-t="height"></label>
-            <div class="field-value">
-              <div class="field-input-wrap">
-                <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="height">
-                <span class="field-unit">cm</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div id="bsaAutoFields" data-fields="weight,height"></div>
 
-        <div id="bsaManualFields" hidden>
-          <div class="field">
-            <label data-t="bsaResult"></label>
-            <div class="field-value">
-              <div class="field-input-wrap">
-                <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="bsaManual">
-                <span class="field-unit">m²</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div id="bsaManualFields" hidden data-fields="bsaManual"></div>
 
         <p class="heart-rate-label" data-t="heartRateGroup">Heart Rate</p>
-        <div class="field">
-          <label data-t="heartRate"></label>
-          <div class="field-value">
-            <div class="field-input-wrap">
-              <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="heartRate">
-              <span class="field-unit">bpm</span>
-            </div>
-          </div>
-        </div>
+        <div data-fields="heartRate"></div>
       </div>
     </section>
 
@@ -910,44 +873,7 @@
             <button class="info-btn" type="button" data-info="mr" aria-label="Mitral regurgitation severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div class="field-stack sub-body" style="margin-top:12px;">
-            <div class="field">
-              <label data-t="pisaRadius"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mrPisaRadius">
-                  <span class="field-unit">mm</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="aliasingVelocity"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mrAliasingVelocity">
-                  <span class="field-unit">cm/s</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="vmax"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mrVmax">
-                  <span class="field-unit">m/s</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="vti"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mrVti">
-                  <span class="field-unit">cm</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="field-stack sub-body" style="margin-top:12px;" data-fields="mrPisaRadius,mrAliasingVelocity,mrVmax,mrVti"></div>
         </div>
 
         <!-- MV VTI (PW) subgroup -->
@@ -959,17 +885,7 @@
             <button class="info-btn" type="button" data-info="mr" aria-label="Mitral regurgitation severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div class="field-stack sub-body" style="margin-top:12px;">
-            <div class="field">
-              <label data-t="vti"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mvVtiPw">
-                  <span class="field-unit">cm</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="field-stack sub-body" style="margin-top:12px;" data-fields="mvVtiPw"></div>
         </div>
 
         <!-- Mitral Stenosis subgroup -->
@@ -981,26 +897,7 @@
             <button class="info-btn" type="button" data-info="ms" aria-label="Mitral stenosis severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div class="field-stack sub-body" hidden style="margin-top:12px;">
-            <div class="field">
-              <label data-t="mvVtiCw"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mvVtiCw">
-                  <span class="field-unit">cm</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="mvPht"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="mvPht">
-                  <span class="field-unit">ms</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="field-stack sub-body" hidden style="margin-top:12px;" data-fields="mvVtiCw,mvPht"></div>
         </div>
       </div>
     </section>
@@ -1019,35 +916,7 @@
             <span class="title" style="font-size:16px;" data-t="lvotGroup">LVOT</span>
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
-          <div class="field-stack sub-body" style="margin-top:12px;">
-            <div class="field">
-              <label data-t="lvotDiam"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="lvotDiam">
-                  <span class="field-unit">mm</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="lvotVti"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="lvotVti">
-                  <span class="field-unit">cm</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="lvotVmax"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="lvotVmax">
-                  <span class="field-unit">m/s</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="field-stack sub-body" style="margin-top:12px;" data-fields="lvotDiam,lvotVti,lvotVmax"></div>
         </div>
 
         <!-- Aortic valve subgroup -->
@@ -1059,35 +928,7 @@
             <button class="info-btn" type="button" data-info="as" aria-label="Aortic stenosis severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div class="field-stack sub-body" style="margin-top:12px;">
-            <div class="field">
-              <label><span data-t="aorticVmax"></span><span class="field-label-optional" data-t="optional"></span></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="aorticVmax">
-                  <span class="field-unit">m/s</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label><span data-t="meanGradient"></span><span class="field-label-optional" data-t="optional"></span></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="meanGradient">
-                  <span class="field-unit">mmHg</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="aorticVti"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="aorticVti">
-                  <span class="field-unit">cm</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="field-stack sub-body" style="margin-top:12px;" data-fields="aorticVmax,meanGradient,aorticVti"></div>
         </div>
 
         <!-- AR PISA subgroup -->
@@ -1099,44 +940,7 @@
             <button class="info-btn" type="button" data-info="ar" aria-label="Aortic regurgitation severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div class="field-stack sub-body" hidden style="margin-top:12px;">
-            <div class="field">
-              <label data-t="pisaRadius"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="arPisaRadius">
-                  <span class="field-unit">mm</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="aliasingVelocity"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="arAliasingVelocity">
-                  <span class="field-unit">cm/s</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="vmax"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="arVmax">
-                  <span class="field-unit">m/s</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="vti"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="arVti">
-                  <span class="field-unit">cm</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="field-stack sub-body" hidden style="margin-top:12px;" data-fields="arPisaRadius,arAliasingVelocity,arVmax,arVti"></div>
         </div>
       </div>
     </section>
@@ -1153,44 +957,7 @@
             <p class="subgroup-title" data-t="trPisaGroup">TR PISA</p>
             <button class="info-btn" type="button" data-info="tr" aria-label="Tricuspid regurgitation severity reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
           </div>
-          <div class="field-stack">
-            <div class="field">
-              <label data-t="pisaRadius"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="trPisaRadius">
-                  <span class="field-unit">mm</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="aliasingVelocity"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="trAliasingVelocity">
-                  <span class="field-unit">cm/s</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="vmax"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="trVmax">
-                  <span class="field-unit">m/s</span>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label data-t="vti"></label>
-              <div class="field-value">
-                <div class="field-input-wrap">
-                  <input type="text" inputmode="decimal" placeholder="0" class="has-unit" data-field="trVti">
-                  <span class="field-unit">cm</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="field-stack" data-fields="trPisaRadius,trAliasingVelocity,trVmax,trVti"></div>
         </div>
       </div>
     </section>
@@ -2575,6 +2342,85 @@
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  // ---- field templates ----
+  // Every calculator input row (label + input + unit) has the same shape, so
+  // it's defined once here instead of as hand-written markup per field. The
+  // markup only carries an empty container per group, tagged
+  // data-fields="fieldA,fieldB,..." — renderFieldSlots() fills each one in
+  // from this table. To add a field: add it here and to fieldNames above,
+  // then list it in the right container's data-fields attribute.
+  const fieldDefs = {
+    weight: { label: "weight", unit: "kg" },
+    height: { label: "height", unit: "cm" },
+    bsaManual: { label: "bsaResult", unit: "m²" },
+    heartRate: { label: "heartRate", unit: "bpm" },
+    mrPisaRadius: { label: "pisaRadius", unit: "mm" },
+    mrAliasingVelocity: { label: "aliasingVelocity", unit: "cm/s" },
+    mrVmax: { label: "vmax", unit: "m/s" },
+    mrVti: { label: "vti", unit: "cm" },
+    mvVtiPw: { label: "vti", unit: "cm" },
+    mvVtiCw: { label: "mvVtiCw", unit: "cm" },
+    mvPht: { label: "mvPht", unit: "ms" },
+    lvotDiam: { label: "lvotDiam", unit: "mm" },
+    lvotVti: { label: "lvotVti", unit: "cm" },
+    lvotVmax: { label: "lvotVmax", unit: "m/s" },
+    aorticVmax: { label: "aorticVmax", unit: "m/s", optional: true },
+    meanGradient: { label: "meanGradient", unit: "mmHg", optional: true },
+    aorticVti: { label: "aorticVti", unit: "cm" },
+    arPisaRadius: { label: "pisaRadius", unit: "mm" },
+    arAliasingVelocity: { label: "aliasingVelocity", unit: "cm/s" },
+    arVmax: { label: "vmax", unit: "m/s" },
+    arVti: { label: "vti", unit: "cm" },
+    trPisaRadius: { label: "pisaRadius", unit: "mm" },
+    trAliasingVelocity: { label: "aliasingVelocity", unit: "cm/s" },
+    trVmax: { label: "vmax", unit: "m/s" },
+    trVti: { label: "vti", unit: "cm" },
+  };
+
+  function renderField(name) {
+    const def = fieldDefs[name];
+    const field = document.createElement("div");
+    field.className = "field";
+
+    const label = document.createElement("label");
+    const labelText = document.createElement("span");
+    labelText.dataset.t = def.label;
+    label.appendChild(labelText);
+    if (def.optional) {
+      const optNote = document.createElement("span");
+      optNote.className = "field-label-optional";
+      optNote.dataset.t = "optional";
+      label.appendChild(optNote);
+    }
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.setAttribute("inputmode", "decimal");
+    input.placeholder = "0";
+    input.className = "has-unit";
+    input.dataset.field = name;
+    const unit = document.createElement("span");
+    unit.className = "field-unit";
+    unit.textContent = def.unit;
+    const wrap = document.createElement("div");
+    wrap.className = "field-input-wrap";
+    wrap.append(input, unit);
+
+    const value = document.createElement("div");
+    value.className = "field-value";
+    value.appendChild(wrap);
+
+    field.append(label, value);
+    return field;
+  }
+
+  function renderFieldSlots() {
+    $$("[data-fields]").forEach(slot => {
+      slot.dataset.fields.split(",").forEach(name => slot.appendChild(renderField(name.trim())));
+    });
+  }
+  renderFieldSlots();
 
   // ---- theme (light is always the default for a first visit; a manual
   // choice is remembered locally so it persists between launches) ----
