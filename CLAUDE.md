@@ -26,6 +26,8 @@ few files, loaded via plain `<link>`/`<script src>` tags — no bundler, no modu
   silently breaks for offline/installed users.
 - `manifest.json` — PWA manifest (icons, theme colors, standalone display).
 - `icons/`, `Icon.png`, `constriction-diagram.png` — static image assets.
+- `jsconfig.json` — dev-only: lets `tsc` type-check the JSDoc annotations in `app.js`/`wiki-data.js`
+  (see "Running / testing changes"). Not loaded by the app; nothing here ships to the browser.
 
 `wiki-data.js` and `app.js` are both plain (non-module) top-level scripts, not IIFEs — they share one
 global scope by design (`wiki-data.js`'s `wikiTopics`/`wikiCategories` are read directly by `app.js`),
@@ -45,6 +47,18 @@ won't register over `file://`.
 
 There are no automated tests. Verify manually in the browser: exercise the changed calculator fields,
 check both languages (language toggle, top right), and check both themes (light/dark toggle).
+
+Optionally, `app.js` and `wiki-data.js` carry JSDoc type annotations on the calculation functions,
+checked against `jsconfig.json` by TypeScript's compiler — this is dev-only tooling, not a build step
+(nothing it checks changes what ships to the browser). Run it after editing calculation logic:
+
+```
+tsc --noEmit -p jsconfig.json
+```
+
+If `tsc` isn't on `PATH`, `npx typescript --noEmit -p jsconfig.json` works without installing anything
+project-local (no `package.json`/`node_modules` here by design). Add `@param`/`@returns` JSDoc to new
+calculation functions the same way the existing ones are annotated.
 
 ## The service worker cache-bust convention
 

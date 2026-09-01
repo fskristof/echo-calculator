@@ -57,10 +57,28 @@ const translations = {
 // is unambiguously the decimal point either way — accept both regardless
 // of the active language instead of flagging one as wrong. `lang` is kept
 // in the signature for call-site compatibility but no longer used here.
+// JSDoc types below are checked via `tsc --noEmit -p jsconfig.json` (see
+// CLAUDE.md) — no build step, this only catches mistakes while editing.
+// Raw field values come straight from `state` as typed-in strings (or "" if
+// empty); every calculate* function returns a number or null (incomplete/
+// invalid input), never NaN — callers rely on that to chain results safely.
+/**
+ * @param {string} value
+ * @param {string} lang
+ * @returns {number}
+ */
 const parseNumber = (value, lang) => {
   if (!value) return NaN;
   return parseFloat(String(value).replace(",", "."));
 };
+/**
+ * @param {string} weight
+ * @param {string} height
+ * @param {boolean} manualMode
+ * @param {string} manualValue
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateBSA = (weight, height, manualMode, manualValue, lang) => {
   if (manualMode) {
     const m = parseNumber(manualValue, lang);
@@ -70,6 +88,13 @@ const calculateBSA = (weight, height, manualMode, manualValue, lang) => {
   if (weight && height && !isNaN(w) && !isNaN(h) && w > 0 && h > 0) return Math.sqrt((h * w) / 3600);
   return null;
 };
+/**
+ * @param {string} pisaRadius
+ * @param {string} aliasing
+ * @param {string} vmax
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateEro = (pisaRadius, aliasing, vmax, lang) => {
   const r = parseNumber(pisaRadius, lang), a = parseNumber(aliasing, lang), v = parseNumber(vmax, lang);
   if (pisaRadius && aliasing && vmax && !isNaN(r) && !isNaN(a) && !isNaN(v) && r > 0 && a > 0 && v > 0) {
@@ -77,11 +102,23 @@ const calculateEro = (pisaRadius, aliasing, vmax, lang) => {
   }
   return null;
 };
+/**
+ * @param {number | null} ero
+ * @param {string} vti
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateRegVol = (ero, vti, lang) => {
   const v = parseNumber(vti, lang);
   if (ero !== null && vti && !isNaN(v) && v > 0) return ero * v;
   return null;
 };
+/**
+ * @param {string} lvotDiam
+ * @param {string} lvotVti
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateSV = (lvotDiam, lvotVti, lang) => {
   const d = parseNumber(lvotDiam, lang), v = parseNumber(lvotVti, lang);
   if (lvotDiam && lvotVti && !isNaN(d) && !isNaN(v) && d > 0 && v > 0) {
@@ -89,15 +126,48 @@ const calculateSV = (lvotDiam, lvotVti, lang) => {
   }
   return null;
 };
+/**
+ * @param {number | null} regVol
+ * @param {number | null} sv
+ * @returns {number | null}
+ */
 const calculateRegFraction = (regVol, sv) => (regVol !== null && sv !== null && sv > 0) ? (regVol / (sv + regVol)) * 100 : null;
+/**
+ * @param {number | null} arRegVol
+ * @param {number | null} sv
+ * @returns {number | null}
+ */
 const calculateARRegFraction = (arRegVol, sv) => (arRegVol !== null && sv !== null && sv > 0) ? (arRegVol / sv) * 100 : null;
+/**
+ * @param {number | null} sv
+ * @param {number | null} bsa
+ * @returns {number | null}
+ */
 const calculateSVI = (sv, bsa) => (sv !== null && bsa !== null && bsa > 0) ? sv / bsa : null;
+/**
+ * @param {number | null} sv
+ * @param {string} heartRate
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateCardiacOutput = (sv, heartRate, lang) => {
   const hr = parseNumber(heartRate, lang);
   if (sv !== null && heartRate && !isNaN(hr) && hr > 0) return (sv / 1000) * hr;
   return null;
 };
+/**
+ * @param {number | null} co
+ * @param {number | null} bsa
+ * @returns {number | null}
+ */
 const calculateCardiacIndex = (co, bsa) => (co !== null && bsa !== null && bsa > 0) ? co / bsa : null;
+/**
+ * @param {string} lvotDiam
+ * @param {string} lvotVti
+ * @param {string} aorticVti
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateAVA = (lvotDiam, lvotVti, aorticVti, lang) => {
   const d = parseNumber(lvotDiam, lang), lv = parseNumber(lvotVti, lang), av = parseNumber(aorticVti, lang);
   if (lvotDiam && lvotVti && aorticVti && !isNaN(d) && !isNaN(lv) && !isNaN(av) && d > 0 && lv > 0 && av > 0) {
@@ -105,18 +175,40 @@ const calculateAVA = (lvotDiam, lvotVti, aorticVti, lang) => {
   }
   return null;
 };
+/**
+ * @param {number | null} ava
+ * @param {number | null} bsa
+ * @returns {number | null}
+ */
 const calculateAVAI = (ava, bsa) => (ava !== null && bsa !== null && bsa > 0) ? ava / bsa : null;
+/**
+ * @param {string} lvotVti
+ * @param {string} aorticVti
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateDVIVti = (lvotVti, aorticVti, lang) => {
   const lv = parseNumber(lvotVti, lang), av = parseNumber(aorticVti, lang);
   if (lvotVti && aorticVti && !isNaN(lv) && !isNaN(av) && av > 0) return lv / av;
   return null;
 };
+/**
+ * @param {string} lvotVmax
+ * @param {string} aorticVmax
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateDVIVmax = (lvotVmax, aorticVmax, lang) => {
   const lv = parseNumber(lvotVmax, lang), av = parseNumber(aorticVmax, lang);
   if (lvotVmax && aorticVmax && !isNaN(lv) && !isNaN(av) && av > 0) return lv / av;
   return null;
 };
 // MVA (PHT): Hatle's PHT-based estimate, MVA = 220 / PHT.
+/**
+ * @param {string} mvPht
+ * @param {string} lang
+ * @returns {number | null}
+ */
 const calculateMVAPht = (mvPht, lang) => {
   const p = parseNumber(mvPht, lang);
   if (mvPht && !isNaN(p) && p > 0) return 220 / p;
@@ -884,7 +976,7 @@ $("#infoClose").addEventListener("click", closeInfo);
 // teardownOverlay) and are meant to be mutually exclusive. A
 // data-scroll-target link just scrolls the (already-open) wiki body.
 document.addEventListener("click", (e) => {
-  const link = e.target.closest(".wiki-inline-link");
+  const link = /** @type {HTMLElement} */ (/** @type {Element} */ (e.target).closest(".wiki-inline-link"));
   if (!link) return;
   if (link.dataset.scrollTarget) {
     const target = document.getElementById(link.dataset.scrollTarget);
@@ -1110,8 +1202,10 @@ function buildReportText() {
 function flashCopyButton(message) {
   const btn = $("#copyBtn");
   btn.textContent = message;
-  clearTimeout(flashCopyButton._t);
-  flashCopyButton._t = setTimeout(() => applyTranslations(), 1500);
+  // Stashed directly on the function (rather than a module-level variable)
+  // so the pending-revert timer travels with the one thing that uses it.
+  clearTimeout(/** @type {any} */ (flashCopyButton)._t);
+  /** @type {any} */ (flashCopyButton)._t = setTimeout(() => applyTranslations(), 1500);
 }
 
 function legacyCopy(text) {

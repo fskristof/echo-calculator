@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "checkJs": true,
+    "strict": false,
+    "noEmit": true,
+    "lib": ["ES2020", "DOM"]
+  },
+  "include": ["app.js", "wiki-data.js"]
+}
