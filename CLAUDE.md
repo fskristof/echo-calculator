@@ -27,13 +27,23 @@ few files, loaded via plain `<link>`/`<script src>` tags — no bundler, no modu
   else; "lazy" here means "not parsed into the page until opened," not "not on the phone yet." Each
   file registers itself into `window.wikiTopicBodies[id] = { en, hu }` — see the comment above
   `loadWikiTopicBody()`. "card"-kind topics have no body and no file here.
+- `prosthetic-data/aortic-valves.js` — reference data (valve model + size -> expected normal Doppler
+  values) for the prosthetic aortic valve type/size picker, transcribed from Zoghbi et al. 2024 (see
+  the file's own header comment for the full citation and, importantly, which valves' mechanical/
+  biological classification is *inferred* rather than an explicit label in the source table —
+  double-check those against the source or another reference before trusting them clinically). Lazy-
+  loaded the same way as `wiki-topics/<id>.js` (`loadProstheticAorticValves()` in `app.js`) — not
+  needed until prosthetic-AV mode is turned on, so it costs nothing otherwise; still listed in `sw.js`
+  `PRECACHE_URLS` so it works offline.
 - `app.js` — everything else: translations, calculation logic, severity grading, field templating,
   app state, the Echo Wiki *rendering/routing* logic (search, `#wiki` hash routing, lazy body loading —
-  as opposed to the data itself, which lives in `wiki-data.js`/`wiki-topics/`), report/clipboard
-  building, and DOM event wiring.
+  as opposed to the data itself, which lives in `wiki-data.js`/`wiki-topics/`), the prosthetic aortic
+  valve type/size picker (`#valveOverlay`, reusing the wiki overlay's full-screen searchable-list
+  pattern), report/clipboard building, and DOM event wiring.
 - `sw.js` — service worker for offline caching (cache-first for same-origin GET requests). Its
-  `PRECACHE_URLS` list must include every file above (`wiki-topics/*.js` included) — a file missing
-  from that list works online but silently breaks for offline/installed users.
+  `PRECACHE_URLS` list must include every file above (`wiki-topics/*.js` and `prosthetic-data/*.js`
+  included) — a file missing from that list works online but silently breaks for offline/installed
+  users.
 - `manifest.json` — PWA manifest (icons, theme colors, standalone display).
 - `icons/`, `Icon.png`, `constriction-diagram.png` — static image assets.
 - `jsconfig.json` — dev-only: lets `tsc` type-check the JSDoc annotations in `app.js`/`wiki-data.js`/
@@ -198,6 +208,22 @@ selected via the rows array's `gradeKey` 4th element in `computeResults()` when 
 is on) are already implemented — that's the pattern to copy for the EOA/EOAi cutoffs above once
 they're available, if they turn out to need a different grading band count than the native ava/avai
 two-key swap did.
+
+The valve type/size picker and normal-value display (plan items 4-5) are also implemented: a
+mechanical/biological switch (`#valveCategoryToggle`) filters a full-screen searchable list
+(`#valveOverlay`, `openValvePicker()`/`renderValvePickerList()` in `app.js`) built from
+`prosthetic-data/aortic-valves.js`; picking a valve populates a size `<select>`
+(`updateValveSizeOptions()`), and picking a size shows that valve+size's normal Peak/Mean gradient,
+EOA, and DVI (where the source table has them) via `renderValveReference()`. This is a **reference
+lookup only** — it never feeds into the AVA/EOA/DVI/AT-ET calculations above; changing category or
+valve clears the current selection rather than trying to reconcile it.
+
+**Data-quality note**: `prosthetic-data/aortic-valves.js`'s header comment lists every valve whose
+mechanical/biological `category` was *inferred* from general knowledge rather than read directly off
+an explicit label in the source table (the table doesn't repeat a mechanism label for every row in a
+manufacturer group, and a few manufacturers — e.g. ATS — make both mechanical and biological models
+under the same name). If a user reports a valve showing under the wrong mechanical/biological switch
+position, check that list first.
 
 Also still planned, not yet started: a valve type + size selector (populated from a guideline
 reference table) that, once both are picked, shows that specific valve's normal reference values.

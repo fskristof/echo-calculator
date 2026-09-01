@@ -6,5 +6,5 @@
     "noEmit": true,
     "lib": ["ES2020", "DOM"]
   },
-  "include": ["app.js", "wiki-data.js", "wiki-topics/*.js", "global.d.ts"]
+  "include": ["app.js", "wiki-data.js", "wiki-topics/*.js", "prosthetic-data/*.js", "global.d.ts"]
 }

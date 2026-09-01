@@ -1,7 +1,7 @@
 // Bump this version string whenever ANY app file changes (index.html, manifest.json,
 // icons, or this file itself). Cache-first means visitors keep the old version until
 // the cache name changes, so a stale CACHE constant = a stuck app.
-const CACHE = 'echo-calc-v4.13';
+const CACHE = 'echo-calc-v4.14';
 
 const PRECACHE_URLS = [
   './',
@@ -16,6 +16,9 @@ const PRECACHE_URLS = [
   // successful online fetch. A new topic file goes here too.
   './wiki-topics/constrictive-pericarditis.js',
   './wiki-topics/pisa-method.js',
+  // Same on-demand-but-precached deal for the prosthetic valve reference
+  // data (see prosthetic-data/ and loadProstheticAorticValves() in app.js).
+  './prosthetic-data/aortic-valves.js',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',

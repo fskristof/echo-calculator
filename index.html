@@ -137,6 +137,29 @@
             </label>
           </div>
           <div class="field-stack sub-body" hidden style="margin-top:12px;" data-fields="avAt,avEt" id="avProstheticFields"></div>
+          <div hidden id="avProstheticValveBlock">
+            <div class="switch-row" style="margin-top:12px;padding:0 4px;">
+              <span class="switch-label" data-t="valveType"></span>
+              <div class="valve-mech-bio-switch">
+                <span data-t="mechanical"></span>
+                <label class="switch">
+                  <input type="checkbox" id="valveCategoryToggle">
+                  <span class="switch-track"><span class="switch-thumb"></span></span>
+                </label>
+                <span data-t="biological"></span>
+              </div>
+            </div>
+            <button type="button" class="valve-picker-btn" id="valveTypeBtn" style="margin:8px 4px 0;"></button>
+            <div class="field" style="padding:0 4px;margin-top:12px;" id="valveSizeRow" hidden>
+              <label data-t="valveSize"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <select id="valveSizeSelect"></select>
+                </div>
+              </div>
+            </div>
+            <div class="valve-reference" id="valveReference" hidden></div>
+          </div>
         </div>
 
         <!-- AR PISA subgroup -->
@@ -210,6 +233,21 @@
       <input type="search" id="wikiSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="info-content" id="wikiContent"></div>
+  </div>
+</div>
+
+<div class="info-overlay" id="valveOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="valveOverlayTitle">
+  <div class="info-panel">
+    <div class="info-bar">
+      <h2 id="valveOverlayTitle" data-t="valveType"></h2>
+      <button class="info-close" type="button" id="valveOverlayClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="wiki-search-row">
+      <input type="search" id="valveSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="info-content" id="valvePickerContent"></div>
   </div>
 </div>
 

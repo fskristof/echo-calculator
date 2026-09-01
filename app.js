@@ -18,6 +18,7 @@ const translations = {
     lvotDiam: "LVOT diameter", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
     aorticVmax: "AV Vmax", meanGradient: "Mean gradient", aorticVti: "AV VTI", optional: "optional",
     prostheticAv: "Prosthetic valve", avAt: "Acceleration time", avEt: "Ejection time", avAtEt: "AT/ET",
+    valveType: "Valve type", mechanical: "Mechanical", biological: "Biological", valveSize: "Valve size",
     mrEro: "MR ERO", mrRegVol: "MR Reg. vol.", mrRegFraction: "MR Reg. fraction",
     arEro: "AR ERO", arRegVol: "AR Reg. vol.", arRegFraction: "AR Reg. fraction",
     trEro: "TR ERO", trRegVol: "TR Reg. vol.",
@@ -43,6 +44,7 @@ const translations = {
     lvotDiam: "LVOT átmérő", lvotVti: "LVOT VTI", lvotVmax: "LVOT Vmax",
     aorticVmax: "AV Vmax", meanGradient: "Átlag gradiens", aorticVti: "AV VTI", optional: "opcionális",
     prostheticAv: "Műbillentyű", avAt: "Akceleraciós idő", avEt: "Ejekciós idő", avAtEt: "AT/ET",
+    valveType: "Billentyű típusa", mechanical: "Mechanikus", biological: "Biológiai", valveSize: "Billentyű mérete",
     mrEro: "MR ERO", mrRegVol: "MR Reg. volumen", mrRegFraction: "MR Reg. frakció",
     arEro: "AR ERO", arRegVol: "AR Reg. volumen", arRegFraction: "AR Reg. frakció",
     trEro: "TR ERO", trRegVol: "TR Reg. volumen",
@@ -492,6 +494,9 @@ const uiStrings = {
     atMachine: "At the machine", card: "Card",
     searchPlaceholder: "Search topics", noResults: "No matching topics.",
     wikiBodyLoading: "Loading…", wikiBodyLoadFailed: "Couldn't load this topic — check your connection and try again.",
+    selectValve: "Select valve", selectSize: "Select size",
+    valveNormalValues: "Normal values for this valve", valvePeakGradient: "Peak gradient",
+    valveMeanGradient: "Mean gradient", valveEoa: "EOA", valveDvi: "DVI",
   },
   hu: {
     notes: "Megjegyzések", close: "Bezárás", back: "Vissza",
@@ -500,6 +505,9 @@ const uiStrings = {
     atMachine: "A gép mellett", card: "Kártya",
     searchPlaceholder: "Témák keresése", noResults: "Nincs találat.",
     wikiBodyLoading: "Betöltés…", wikiBodyLoadFailed: "Nem sikerült betölteni ezt a témát — ellenőrizd a kapcsolatot, és próbáld újra.",
+    selectValve: "Billentyű kiválasztása", selectSize: "Méret kiválasztása",
+    valveNormalValues: "Normál értékek erre a billentyűre", valvePeakGradient: "Csúcs gradiens",
+    valveMeanGradient: "Átlag gradiens", valveEoa: "EOA", valveDvi: "DVI",
   },
 };
 const infoAriaLabels = {
@@ -639,6 +647,109 @@ function loadWikiTopicBody(id) {
     document.head.appendChild(script);
   });
   return wikiTopicBodyPromises[id];
+}
+
+// ---- Prosthetic aortic valve type/size picker ----
+// Reference-only lookup (type + size -> expected normal Doppler values,
+// per Zoghbi et al. 2024 — see prosthetic-data/aortic-valves.js for the
+// full citation and data-entry notes) — never feeds into a calculation.
+// Same lazy-load-on-first-need pattern as loadWikiTopicBody: the data
+// isn't needed until the picker is opened or the size/reference already
+// has a valve chosen, so it costs nothing for anyone not using prosthetic-
+// AV mode. Still listed in sw.js PRECACHE_URLS, so it works offline too.
+let prostheticAorticValvesPromise = null;
+function loadProstheticAorticValves() {
+  if (window.prostheticAorticValves) return Promise.resolve(window.prostheticAorticValves);
+  if (prostheticAorticValvesPromise) return prostheticAorticValvesPromise;
+  prostheticAorticValvesPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "./prosthetic-data/aortic-valves.js";
+    script.onload = () => {
+      if (window.prostheticAorticValves) resolve(window.prostheticAorticValves);
+      else reject(new Error("prosthetic-data/aortic-valves.js loaded but didn't register data"));
+    };
+    script.onerror = () => reject(new Error("Failed to load prosthetic-data/aortic-valves.js"));
+    document.head.appendChild(script);
+  });
+  return prostheticAorticValvesPromise;
+}
+
+let valveSearchQuery = "";
+function currentCategoryValves() {
+  return (window.prostheticAorticValves || []).filter(v => v.category === state.prostheticValveCategory);
+}
+function renderValvePickerList() {
+  const query = valveSearchQuery.trim();
+  const list = currentCategoryValves();
+  const matches = query ? list.filter(v => foldWikiText(v.name).includes(foldWikiText(query))) : list;
+  $("#valvePickerContent").innerHTML = matches.length
+    ? `<div class="wiki-topic-list">${matches.map(v => `
+        <button class="wiki-topic-item" type="button" data-valve="${v.name}">
+          <span class="wiki-topic-title">${v.name}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
+        </button>`).join("")}</div>`
+    : `<div class="wiki-empty">${uiStrings[state.language].noResults}</div>`;
+  $$("[data-valve]", $("#valvePickerContent")).forEach(btn => {
+    btn.addEventListener("click", () => selectProstheticValve(btn.dataset.valve));
+  });
+}
+function openValvePicker() {
+  valveSearchQuery = "";
+  $("#valveSearchInput").value = "";
+  $("#valveOverlay").hidden = false;
+  setupOverlay($("#valveSearchInput"));
+  loadProstheticAorticValves().then(renderValvePickerList).catch(err => {
+    console.error(err);
+    $("#valvePickerContent").innerHTML = `<div class="wiki-empty">${uiStrings[state.language].wikiBodyLoadFailed}</div>`;
+  });
+}
+function closeValvePicker() {
+  $("#valveOverlay").hidden = true;
+  teardownOverlay();
+}
+function selectProstheticValve(name) {
+  state.prostheticValveName = name;
+  state.prostheticValveSize = "";
+  closeValvePicker();
+  updateValveTypeButton();
+  updateValveSizeOptions();
+  renderValveReference();
+}
+function updateValveTypeButton() {
+  const t = uiStrings[state.language];
+  const btn = $("#valveTypeBtn");
+  btn.innerHTML = state.prostheticValveName
+    ? `<span>${state.prostheticValveName}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>`
+    : `<span class="placeholder">${t.selectValve}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
+}
+function updateValveSizeOptions() {
+  const row = $("#valveSizeRow"), select = $("#valveSizeSelect");
+  const valve = currentCategoryValves().find(v => v.name === state.prostheticValveName);
+  if (!valve) { row.hidden = true; select.innerHTML = ""; return; }
+  const t = uiStrings[state.language];
+  select.innerHTML = `<option value="" disabled ${state.prostheticValveSize ? "" : "selected"}>${t.selectSize}</option>`
+    + valve.sizes.map(s => `<option value="${s.size}" ${s.size === state.prostheticValveSize ? "selected" : ""}>${s.size} mm</option>`).join("");
+  row.hidden = false;
+}
+function renderValveReference() {
+  const el = $("#valveReference");
+  const valve = currentCategoryValves().find(v => v.name === state.prostheticValveName);
+  const sizeEntry = valve && valve.sizes.find(s => s.size === state.prostheticValveSize);
+  if (!sizeEntry) { el.hidden = true; el.innerHTML = ""; return; }
+  const t = uiStrings[state.language];
+  const rows = [];
+  if (sizeEntry.peak) rows.push(`<li><strong>${t.valvePeakGradient}:</strong> ${sizeEntry.peak} mmHg</li>`);
+  if (sizeEntry.mean) rows.push(`<li><strong>${t.valveMeanGradient}:</strong> ${sizeEntry.mean} mmHg</li>`);
+  if (sizeEntry.eoa) rows.push(`<li><strong>${t.valveEoa}:</strong> ${sizeEntry.eoa} cm²</li>`);
+  if (sizeEntry.dvi) rows.push(`<li><strong>${t.valveDvi}:</strong> ${sizeEntry.dvi}</li>`);
+  el.innerHTML = rows.length ? `<h3>${t.valveNormalValues}</h3><ul>${rows.join("")}</ul>` : "";
+  el.hidden = rows.length === 0;
+}
+function refreshValvePickerLanguage() {
+  updateValveTypeButton();
+  updateValveSizeOptions();
+  renderValveReference();
+  if (!$("#valveOverlay").hidden) renderValvePickerList();
 }
 
 let currentWikiTopic = null;
@@ -890,6 +1001,13 @@ fieldNames.forEach(f => state[f] = "");
 // Prosthetic aortic valve mode — separate from fieldNames since it's a
 // boolean toggle, not a text input field.
 state.prostheticAV = false;
+// Valve type/size picker (reference lookup only — see renderValveReference;
+// this never feeds into a calculation). prostheticValveCategory choosing
+// "biological" also shows the transcatheter valves (see
+// prosthetic-data/aortic-valves.js) alongside surgical bioprostheses.
+state.prostheticValveCategory = "mechanical";
+state.prostheticValveName = "";
+state.prostheticValveSize = "";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -1047,7 +1165,31 @@ $("#bsaModeToggle").addEventListener("click", () => {
 $("#prostheticAvToggle").addEventListener("change", (e) => {
   state.prostheticAV = /** @type {HTMLInputElement} */ (e.target).checked;
   $("#avProstheticFields").hidden = !state.prostheticAV;
+  $("#avProstheticValveBlock").hidden = !state.prostheticAV;
+  if (state.prostheticAV) { updateValveTypeButton(); updateValveSizeOptions(); renderValveReference(); }
   computeResults();
+});
+
+$("#valveCategoryToggle").addEventListener("change", (e) => {
+  state.prostheticValveCategory = /** @type {HTMLInputElement} */ (e.target).checked ? "biological" : "mechanical";
+  // A previously selected valve almost certainly doesn't belong to the
+  // newly chosen category (names aren't shared across mechanical/
+  // biological), so clear it rather than show a stale, now-invalid pick.
+  state.prostheticValveName = "";
+  state.prostheticValveSize = "";
+  updateValveTypeButton();
+  updateValveSizeOptions();
+  renderValveReference();
+});
+$("#valveTypeBtn").addEventListener("click", openValvePicker);
+$("#valveOverlayClose").addEventListener("click", closeValvePicker);
+$("#valveSearchInput").addEventListener("input", (e) => {
+  valveSearchQuery = /** @type {HTMLInputElement} */ (e.target).value;
+  renderValvePickerList();
+});
+$("#valveSizeSelect").addEventListener("change", (e) => {
+  state.prostheticValveSize = /** @type {HTMLSelectElement} */ (e.target).value;
+  renderValveReference();
 });
 
 $("#langToggle").addEventListener("click", () => {
@@ -1056,6 +1198,7 @@ $("#langToggle").addEventListener("click", () => {
   computeResults();
   refreshInfoLanguage();
   refreshWikiLanguage();
+  refreshValvePickerLanguage();
 });
 
 $("#themeToggle").addEventListener("click", () => {
@@ -1103,6 +1246,7 @@ document.addEventListener("keydown", (e) => {
   // Escape steps back (topic -> list -> closed), same as the on-screen
   // back button, instead of closing the wiki outright from a topic.
   if (!$("#wikiOverlay").hidden) handleWikiBack();
+  if (!$("#valveOverlay").hidden) closeValvePicker();
 });
 
 $("#clearBtn").addEventListener("click", () => {
