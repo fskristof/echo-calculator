@@ -1800,8 +1800,8 @@ function rawInput(raw, lang) {
   return trimmed.replace(/[.,]/, targetSep);
 }
 
-// One PISA line: "<Group>: <label>: <val> <unit>; <label>: <val> <unit>; ..."
-// in the fixed order radius, ERO, Reg vol, Reg fraction, Vmax, VTI, Aliasing
+// One PISA block: "<Group>:" on its own line, then one "<label>: <val> <unit>"
+// line per item, in the fixed order radius, ERO, Reg vol, Reg fraction, Vmax, VTI, Aliasing
 // velocity — regFractionLabel is omitted entirely for TR (not calculated).
 // Raw inputs (radius/Vmax/VTI/aliasing) are echoed as typed (decimal
 // separator normalized to lang); ERO/Reg vol/Reg fraction are calculated
@@ -1821,7 +1821,7 @@ function pisaLine(t, lang, groupLabel, eroLabel, regVolLabel, regFractionLabel,
   const aliasing = rawInput(aliasingRaw, lang);
   if (aliasing !== null) parts.push(`${t.aliasingVelocity}: ${aliasing} cm/s`);
   if (parts.length === 0) return null;
-  return `${groupLabel}: ${parts.join("; ")}`;
+  return `${groupLabel}:\n${parts.join("\n")}`;
 }
 
 function buildReportText() {
