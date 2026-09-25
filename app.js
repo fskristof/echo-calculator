@@ -1883,6 +1883,7 @@ function buildReportText() {
     const note = v.note ? ` (${t["av" + v.note[0].toUpperCase() + v.note.slice(1)]})` : "";
     lvotLines.push(`${t.avVerdictTitle}: ${category}${note}`);
   }
+  if (lastResults.sv !== null) lvotLines.push(`${t.sv}: ${fmt(lastResults.sv)} ml`);
   if (lastResults.svi !== null) lvotLines.push(`${t.svi}: ${fmt(lastResults.svi)} ml/m²`);
   if (lastResults.cardiacOutput !== null) lvotLines.push(`CO: ${fmt(lastResults.cardiacOutput)} l/min`);
   if (lastResults.cardiacIndex !== null) lvotLines.push(`CI: ${fmt(lastResults.cardiacIndex)} l/min/m²`);
