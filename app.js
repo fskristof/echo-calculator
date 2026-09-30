@@ -1841,15 +1841,11 @@ function buildReportText() {
     s.mrPisaRadius, s.mrVmax, s.mrVti, s.mrAliasingVelocity,
     lastResults.mrEro, lastResults.mrRegVol, lastResults.mrRegFraction));
 
-  // Mitral Stenosis — raw inputs echoed, then whichever MVA(s) computed
-  const msParts = [];
-  const mvVtiCw = rawInput(s.mvVtiCw, lang);
-  if (mvVtiCw !== null) msParts.push(`${t.mvVtiCw}: ${mvVtiCw} cm`);
-  const mvPht = rawInput(s.mvPht, lang);
-  if (mvPht !== null) msParts.push(`${t.mvPht}: ${mvPht} ms`);
-  if (lastResults.mvaVti !== null) msParts.push(`${t.mvaVti}: ${fmt(lastResults.mvaVti)} cm²`);
-  if (lastResults.mvaPht !== null) msParts.push(`${t.mvaPht}: ${fmt(lastResults.mvaPht)} cm²`);
-  blocks.push(msParts.length ? `${t.mitralStenosisGroup}: ${msParts.join("; ")}` : null);
+  // Mitral Stenosis — just the computed MVA(s), one per line, no group heading
+  const msLines = [];
+  if (lastResults.mvaPht !== null) msLines.push(`${t.mvaPht}: ${fmt(lastResults.mvaPht)} cm²`);
+  if (lastResults.mvaVti !== null) msLines.push(`${t.mvaVti}: ${fmt(lastResults.mvaVti)} cm²`);
+  blocks.push(msLines.length ? msLines.join("\n") : null);
 
   // LVOT / AV / AVA / DVI block — one line per item, no blank lines between them
   const lvotLines = [];
@@ -1883,6 +1879,7 @@ function buildReportText() {
     const note = v.note ? ` (${t["av" + v.note[0].toUpperCase() + v.note.slice(1)]})` : "";
     lvotLines.push(`${t.avVerdictTitle}: ${category}${note}`);
   }
+  if (lastResults.sv !== null) lvotLines.push(`${t.sv}: ${fmt(lastResults.sv)} ml`);
   if (lastResults.svi !== null) lvotLines.push(`${t.svi}: ${fmt(lastResults.svi)} ml/m²`);
   if (lastResults.cardiacOutput !== null) lvotLines.push(`CO: ${fmt(lastResults.cardiacOutput)} l/min`);
   if (lastResults.cardiacIndex !== null) lvotLines.push(`CI: ${fmt(lastResults.cardiacIndex)} l/min/m²`);
