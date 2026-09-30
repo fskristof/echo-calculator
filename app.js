@@ -814,6 +814,8 @@ const uiStrings = {
     selectValve: "Select valve", selectSize: "Select size",
     valveNormalValues: "Normal values for this valve", valvePeakGradient: "Peak gradient",
     valveMeanGradient: "Mean gradient", valveEoa: "EOA", valveDvi: "DVI",
+    valveThirdPartyTag: "third-party data",
+    valveThirdPartyNote: "Not from the official guideline: this valve is not included in Zoghbi et al. 2024 (ASE), so these values are third-party information and have not been verified against a primary source.",
   },
   hu: {
     notes: "Megjegyzések", close: "Bezárás", back: "Vissza",
@@ -825,6 +827,8 @@ const uiStrings = {
     selectValve: "Billentyű kiválasztása", selectSize: "Méret kiválasztása",
     valveNormalValues: "Normál értékek erre a billentyűre", valvePeakGradient: "Csúcs gradiens",
     valveMeanGradient: "Átlag gradiens", valveEoa: "EOA", valveDvi: "DVI",
+    valveThirdPartyTag: "külső forrás",
+    valveThirdPartyNote: "Nem a hivatalos irányelvből származik: ez a billentyű nem szerepel a Zoghbi et al. 2024 (ASE) irányelvben, ezért ezek az értékek harmadik féltől származó információk, és elsődleges forrással nem ellenőrizték őket.",
   },
 };
 const infoAriaLabels = {
@@ -1034,7 +1038,7 @@ function renderValvePickerList() {
   $("#valvePickerContent").innerHTML = matches.length
     ? `<div class="wiki-topic-list">${matches.map(v => `
         <button class="wiki-topic-item" type="button" data-valve="${v.name}">
-          <span class="wiki-topic-title">${v.name}</span>
+          <span class="wiki-topic-title">${v.name}${v.thirdParty ? ` <span class="valve-third-party-tag">${uiStrings[state.language].valveThirdPartyTag}</span>` : ""}</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
         </button>`).join("")}</div>`
     : `<div class="wiki-empty">${uiStrings[state.language].noResults}</div>`;
@@ -1095,7 +1099,8 @@ function renderValveReference() {
   if (sizeEntry.mean) rows.push(`<li><strong>${t.valveMeanGradient}:</strong> ${sizeEntry.mean} mmHg</li>`);
   if (sizeEntry.eoa) rows.push(`<li><strong>${t.valveEoa}:</strong> ${sizeEntry.eoa} cm²</li>`);
   if (sizeEntry.dvi) rows.push(`<li><strong>${t.valveDvi}:</strong> ${sizeEntry.dvi}</li>`);
-  el.innerHTML = rows.length ? `<h3>${t.valveNormalValues}</h3><ul>${rows.join("")}</ul>` : "";
+  const note = valve.thirdParty ? `<p class="valve-third-party-note">${t.valveThirdPartyNote}</p>` : "";
+  el.innerHTML = rows.length ? `<h3>${t.valveNormalValues}</h3><ul>${rows.join("")}</ul>${note}` : "";
   el.hidden = rows.length === 0;
 }
 // Parses a "mean ± SD" display string (the format every numeric field in
