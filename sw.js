@@ -1,7 +1,7 @@
 // Bump this version string whenever ANY app file changes (index.html, manifest.json,
 // icons, or this file itself). Cache-first means visitors keep the old version until
 // the cache name changes, so a stale CACHE constant = a stuck app.
-const CACHE = 'echo-calc-v4.29';
+const CACHE = 'echo-calc-v4.30';
 
 const PRECACHE_URLS = [
   './',
@@ -30,7 +30,10 @@ const PRECACHE_URLS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+      // cache: 'reload' bypasses the browser's HTTP cache (GitHub Pages serves
+      // max-age=600), so a fresh install never re-stores a stale copy of a
+      // file under the new CACHE name.
+      .then((cache) => cache.addAll(PRECACHE_URLS.map((url) => new Request(url, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
