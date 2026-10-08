@@ -245,11 +245,13 @@ an explicit label in the source table (the table doesn't repeat a mechanism labe
 manufacturer group, and a few manufacturers — e.g. ATS — make both mechanical and biological models
 under the same name). If a user reports a valve showing under the wrong mechanical/biological switch
 position, check that list first. Every one of these inferred entries has since been cross-checked
-against another prosthetic-valve reference app's own type lists and confirmed correct; a couple of
-valves that app covers (e.g. Carbomedics Orbis, Medtronic Open Pivot AP/Standard, CE Magna 3000/Ease
-3300, CE STD 2625, Crown, Freestyle Root) aren't in the Zoghbi table at all and so aren't in this file
-yet — add them as their own entries (tag the source in a comment, same as the Zoghbi citation at the
-top) if/when reference values for them are available.
+against another prosthetic-valve reference app's own type lists and confirmed correct. That app also
+covered valves absent from the Zoghbi table (Carbomedics Orbis, Medtronic Open Pivot AP/Standard, CE Magna
+3000/Ease 3300, CE STD 2625, Crown, Freestyle Root). Their per-size values have no authoritative source
+(manufacturer IFUs don't publish them; Crown 21 has a `± 0.0` SD and several entries are internally
+inconsistent), so since v4.30 they're flagged `thirdParty: true` in the data file, and the UI shows a
+"third-party data" tag in the picker plus a note under the reference values (`valveThirdPartyNote`). Every
+other value was verified against the Zoghbi PDF in v4.30. Keep the flag on any valve not from that guideline.
 
 ### Elevated-gradient verdict (`calculateAvVerdict`/`renderAvVerdict`)
 

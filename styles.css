@@ -507,6 +507,26 @@ main {
 
     strong { color: var(--text-main); }
   }
+  .valve-third-party-note {
+    margin: 12px 0 0;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text-main);
+    border-left: 3px solid var(--grade-moderate-text);
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 6px;
+  }
+}
+.valve-third-party-tag {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sub);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
 }
 
 /* Results */
