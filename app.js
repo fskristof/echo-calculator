@@ -339,10 +339,11 @@ const gradeFns = {
   trRegVol: v => v < 30 ? "mild" : v < 45 ? "moderate" : v < 60 ? "severe" : v < 75 ? "massive" : "torrential",
   ava: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
   avai: v => v > 0.85 ? "mild" : v > 0.6 ? "moderate" : "severe",
-  // Same cutoffs as AVA (>1.5 mild, 1.0–1.5 moderate, <1.0 severe) —
-  // per the mitral stenosis severity table, not a reuse of the AS bands.
-  mvaVti: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
-  mvaPht: v => v >= 1.5 ? "mild" : v > 1.0 ? "moderate" : "severe",
+  // Mitral stenosis valve area: progressive (mild) >2.5, progressive
+  // (moderate) 2.5-1.6, severe <=1.5 cm². The source table leaves a gap
+  // between 1.5 and 1.6; anything above 1.5 is treated as moderate.
+  mvaVti: v => v > 2.5 ? "mild" : v > 1.5 ? "moderate" : "severe",
+  mvaPht: v => v > 2.5 ? "mild" : v > 1.5 ? "moderate" : "severe",
   dviVti: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
   dviVmax: v => v > 0.5 ? "mild" : v >= 0.25 ? "moderate" : "severe",
   // Prosthetic AV, Table 5 (Zoghbi et al. 2024) "SAVR" row for DVI: normal
@@ -653,14 +654,15 @@ const severityInfo = {
     },
     ms: {
       title: "Mitral Stenosis",
-      headers: ["Parameter", "Mild", "Moderate", "Severe"],
+      headers: ["Parameter", "Progressive (Mild)", "Progressive (Moderate)", "Severe"],
       rows: [
-        ["Mean gradient (mmHg)", "<5", "5–10", ">10"],
-        ["PHT (ms)", "71–139", "140–219", "≥220"],
-        ["MVA (cm²)", ">1.5", "1.5–1.0", "<1.0"],
+        ["Valve area (cm²)", ">2.5", "2.5–1.6", "≤1.5"],
+        ["Pressure half-time (ms)", "<100", "100–149", "≥150"],
+        ["Mean gradient (mmHg)*", "<5", "5–9", "≥10"],
+        ["Systolic pulmonary artery pressure (mmHg)", "<30", "30–49", "≥50"],
       ],
       notes: [
-        "MVA <1.5 cm² is already considered clinically significant, even though this table grades it as mild.",
+        "*At a heart rate of 60–80 beats per minute.",
       ],
     },
   },
@@ -790,14 +792,15 @@ const severityInfo = {
     },
     ms: {
       title: "Mitrális stenosis",
-      headers: ["Paraméter", "Enyhe", "Közepes", "Súlyos"],
+      headers: ["Paraméter", "Progresszív (enyhe)", "Progresszív (közepes)", "Súlyos"],
       rows: [
-        ["Átlag grádiens (Hgmm)", "<5", "5–10", ">10"],
-        ["PHT (ms)", "71–139", "140–219", "≥220"],
-        ["MVA (cm²)", ">1,5", "1,5–1,0", "<1,0"],
+        ["Billentyűnyílás-terület (cm²)", ">2,5", "2,5–1,6", "≤1,5"],
+        ["Pressure half-time (ms)", "<100", "100–149", "≥150"],
+        ["Átlag grádiens (Hgmm)*", "<5", "5–9", "≥10"],
+        ["Szisztolés pulmonalis artériás nyomás (Hgmm)", "<30", "30–49", "≥50"],
       ],
       notes: [
-        "Az 1,5 cm² alatti MVA már klinikailag szignifikánsnak számít, annak ellenére, hogy ez a táblázat enyhének minősíti.",
+        "*60–80/perc szívfrekvencia mellett.",
       ],
     },
   },

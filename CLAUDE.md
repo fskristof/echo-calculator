@@ -249,7 +249,7 @@ against another prosthetic-valve reference app's own type lists and confirmed co
 covered valves absent from the Zoghbi table (Carbomedics Orbis, Medtronic Open Pivot AP/Standard, CE Magna
 3000/Ease 3300, CE STD 2625, Crown, Freestyle Root). Their per-size values have no authoritative source
 (manufacturer IFUs don't publish them; Crown 21 has a `± 0.0` SD and several entries are internally
-inconsistent), so since v4.30 they're flagged `thirdParty: true` in the data file, and the UI shows a
+inconsistent), so since v4.30 (shipped as v4.32) they're flagged `thirdParty: true` in the data file, and the UI shows a
 "third-party data" tag in the picker plus a note under the reference values (`valveThirdPartyNote`). Every
 other value was verified against the Zoghbi PDF in v4.30. Keep the flag on any valve not from that guideline.
 
