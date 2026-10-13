@@ -32,9 +32,13 @@ few files, loaded via plain `<link>`/`<script src>` tags — no bundler, no modu
   the file's own header comment for the full citation and, importantly, which valves' mechanical/
   biological classification is *inferred* rather than an explicit label in the source table —
   double-check those against the source or another reference before trusting them clinically). Lazy-
-  loaded the same way as `wiki-topics/<id>.js` (`loadProstheticAorticValves()` in `app.js`) — not
+  loaded the same way as `wiki-topics/<id>.js` (`loadProstheticValveData("av")` in `app.js`) — not
   needed until prosthetic-AV mode is turned on, so it costs nothing otherwise; still listed in `sw.js`
   `PRECACHE_URLS` so it works offline.
+- `prosthetic-data/mitral-valves.js` — the same for prosthetic mitral valves (Zoghbi et al. 2024
+  Table A5, plus Table A6's SAPIEN mitral ViV/ViR/ViMAC mean gradients), loaded via
+  `loadProstheticValveData("mv")`. Adds `vel` (peak velocity) and `pht` per size; has no DVI column.
+  See its header comment for the inferred-category valves and the Mosaic = Hancock II source quirk.
 - `app.js` — everything else: translations, calculation logic, severity grading, field templating,
   app state, the Echo Wiki *rendering/routing* logic (search, `#wiki` hash routing, lazy body loading —
   as opposed to the data itself, which lives in `wiki-data.js`/`wiki-topics/`), the prosthetic aortic
@@ -253,6 +257,12 @@ inconsistent), so since v4.30 (shipped as v4.32) they're flagged `thirdParty: tr
 "third-party data" tag in the picker plus a note under the reference values (`valveThirdPartyNote`). Every
 other value was verified against the Zoghbi PDF in v4.30. Keep the flag on any valve not from that guideline.
 
+The picker code is position-generic: `valvePositions` (`av`/`mv`) maps each position to its data
+file, window global, and its own copy of the controls' ids; selection lives in
+`state.valveSel[pos]` (`{ category, name, size }`); the full-screen `#valveOverlay` is shared, with
+`activeValvePos` recording which position opened it. Add a future position (e.g. tricuspid) there
+rather than copying the picker.
+
 ### Elevated-gradient verdict (`calculateAvVerdict`/`renderAvVerdict`)
 
 Also implemented: an automatic verdict ("Normal prosthetic aortic valve" / "Possible stenosis" /
@@ -314,3 +324,39 @@ note) and renders directly under the figure, before "Table 2" — not lumped in 
 at the very bottom, since it's important context for reading the diagram right above it. The remaining,
 more general `notes` (what "Table 1"/"Table 2" require or represent, how this app's own badges use
 Table 1's cutoffs, the BMI-dependent EOAi cutoff pair) stay at the bottom as before.
+
+## Prosthetic mitral valve
+
+The "Prosthetic valve" switch in the Mitral Stenosis subgroup (`#prostheticMvToggle`,
+`state.prostheticMV`) mirrors the aortic one: two extra inputs (`mvPeakE`, `mvMeanGradient`), the
+mechanical/biological switch, valve picker and size select, and a reference card (which also shows
+peak velocity and PHT). All from Zoghbi et al. 2024:
+
+- **Table 11 grading** (`gradeFns.mvPeakE`/`.mvMeanGradient`/`.mvDvi`/`.mvEoa`/`.mvPht`): Normal /
+  Possible stenosis / Suggests significant stenosis (shown with the existing "Stenosis" label). MV DVI
+  is `mvVtiCw / lvotVti` (`calculateMvDvi`) — the existing CW field, not the PW `mvVtiPw` used for the
+  native MR ratio. MV EOA is the same continuity value as native MVA (VTI), relabeled. In prosthetic
+  mode the native "MVA (PHT)" row is hidden (the guideline says 220/PHT overestimates prosthetic EOA)
+  and PHT is graded directly instead.
+- **EOA graded two ways, per user direction**: Table 11's absolute cutoffs on the "MV EOA" row, *and*
+  a separate "MV EOA vs. valve reference" row (`gradeMvEoaVsReference`) whose value is a z-score
+  against the selected valve/size's reference EOA, with the aortic Table 5's 1 SD / 2 SD bands. The
+  guideline doesn't define SD bands for mitral EOA, so this is an extrapolation and is labeled as one
+  in the info notes.
+- **EOAi** (`gradeMvEoaiPPM`): Table 7's mitral rows, BMI-dependent (>1.2/0.91-1.2/<=0.90 under BMI
+  30; >1.0/0.76-1.0/<=0.75 at or above it).
+- **MR ERO** uses `gradeFns.mrEroProsthetic` (Table 13: exactly 0.40 cm² is severe) in prosthetic
+  mode; Reg. vol./fraction cutoffs already matched.
+- **Verdict** (`calculateMvVerdict`, rendered by the shared `renderAvVerdict(verdict, lang, "mv")`):
+  a synthesis of Tables 11 and 12 written for this app, per user direction. The guideline has no
+  algorithm figure for prosthetic mitral stenosis, so don't treat this as a transcription. PHT is the
+  discriminator and is required; see the comment above the function for the exact branches
+  (normal / possible stenosis / significant stenosis / suggests significant MR / raised flow
+  parameters with normal PHT / discordant).
+- **Info topic** `severityInfo.mvProsthetic`: four tables (locally numbered 1-4 = source Tables 11, 7
+  [mitral rows], 12, 13) around an inline-SVG redraw of Figure 21 (`mvrAlgorithmFigure()`, the MR-
+  after-MVR integration algorithm). Its long "specific criteria" lists and footnotes are
+  `figureNotes` prose. `tableBeforeFigure`/`tableAfterFigure` may now be arrays of specs, and
+  `buildSeverityTable` takes `plainHeaders` for non-severity columns.
+- **Report**: a "Prosthetic MV" block (selected valve + size, heart rate, inputs as typed, DVI,
+  EOA/EOAi, verdict) replaces the plain MVA lines while the toggle is on.

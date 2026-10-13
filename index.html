@@ -98,6 +98,42 @@
             <svg class="chevron" style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
           <div class="field-stack sub-body" hidden style="margin-top:12px;" data-fields="mvVtiCw,mvPht"></div>
+          <!-- Prosthetic MV — same switch/picker pattern as the AV subgroup
+               below (see the comment above valvePositions in app.js). -->
+          <div class="switch-row" style="margin-top:12px;padding:0 4px;">
+            <span class="switch-label-group">
+              <span class="switch-label" data-t="prostheticAv"></span>
+              <button class="info-btn" type="button" data-info="mvProsthetic" aria-label="Prosthetic mitral valve reference"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.8" r="0.5" fill="currentColor" stroke="none"></circle></svg></button>
+            </span>
+            <label class="switch">
+              <input type="checkbox" id="prostheticMvToggle">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+          <div class="field-stack sub-body" hidden style="margin-top:12px;" data-fields="mvPeakE,mvMeanGradient" id="mvProstheticFields"></div>
+          <div hidden id="mvProstheticValveBlock">
+            <div class="switch-row" style="margin-top:12px;padding:0 4px;">
+              <span class="switch-label" data-t="valveType"></span>
+              <div class="valve-mech-bio-switch">
+                <span data-t="mechanical"></span>
+                <label class="switch">
+                  <input type="checkbox" id="mvValveCategoryToggle">
+                  <span class="switch-track"><span class="switch-thumb"></span></span>
+                </label>
+                <span data-t="biological"></span>
+              </div>
+            </div>
+            <button type="button" class="valve-picker-btn" id="mvValveTypeBtn" style="margin:8px 4px 0;"></button>
+            <div class="field" style="padding:0 4px;margin-top:12px;" id="mvValveSizeRow" hidden>
+              <label data-t="valveSize"></label>
+              <div class="field-value">
+                <div class="field-input-wrap">
+                  <select id="mvValveSizeSelect"></select>
+                </div>
+              </div>
+            </div>
+            <div class="valve-reference" id="mvValveReference" hidden></div>
+          </div>
         </div>
       </div>
     </section>

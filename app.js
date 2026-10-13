@@ -31,6 +31,17 @@ const translations = {
     ava: "AVA", avai: "AVAi", eoa: "EOA", eoai: "EOAi",
     dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
     mvaVti: "MVA (VTI)", mvaPht: "MVA (PHT)",
+    mvPeakE: "MV peak E velocity", mvMeanGradient: "MV mean gradient",
+    mvDvi: "MV DVI (VTI PrMV / LVOT)", mvEoa: "MV EOA", mvEoai: "MV EOAi", mvEoaRef: "MV EOA vs. valve reference",
+    mvVerdictTitle: "Prosthetic MV assessment", mvNormal: "Normal prosthetic mitral valve function",
+    mvPossibleStenosis: "Possible stenosis", mvStenosis: "Suggests significant stenosis",
+    mvMr: "Suggests significant prosthetic MR",
+    mvHighFlow: "Elevated flow parameters with normal PHT",
+    mvDiscordant: "Discordant findings — double-check measurements",
+    mvMrNote: "Peak E ≥ 1.9 m/s and DVI ≥ 2.5 with a normal PHT: specificity close to 100% in mechanical valves. Confirm with TEE.",
+    mvHighFlowNote: "Consider prosthetic MR, a high-flow state, or PPM.",
+    mvDiscordantNote: "PHT > 200 ms, but peak E, mean gradient and DVI are all normal.",
+    heartRateAbbr: "HR", prostheticMvReport: "Prosthetic MV",
     clear: "Clear All", results: "Calculated Results",
     copyReport: "Copy to clipboard", copied: "Copied to clipboard",
     copyEmpty: "Nothing to copy yet", copyFailed: "Couldn't copy — select and copy manually",
@@ -62,6 +73,17 @@ const translations = {
     ava: "AVA", avai: "AVAi", eoa: "EOA", eoai: "EOAi",
     dviVti: "DVI(VTI)", dviVmax: "DVI(Vmax)", mvVtiLvotVti: "MV VTI / LVOT VTI",
     mvaVti: "MVA (VTI)", mvaPht: "MVA (PHT)",
+    mvPeakE: "MV csúcs E sebesség", mvMeanGradient: "MV átlag gradiens",
+    mvDvi: "MV DVI (VTI PrMV / LVOT)", mvEoa: "MV EOA", mvEoai: "MV EOAi", mvEoaRef: "MV EOA a referenciához képest",
+    mvVerdictTitle: "Mitrális műbillentyű értékelés", mvNormal: "Normál mitrális műbillentyű-funkció",
+    mvPossibleStenosis: "Lehetséges stenosis", mvStenosis: "Jelentős stenosisra utal",
+    mvMr: "Jelentős műbillentyű MR-re utal",
+    mvHighFlow: "Emelkedett flow-paraméterek normál PHT mellett",
+    mvDiscordant: "Ellentmondó eredmények — ellenőrizd a méréseket",
+    mvMrNote: "Csúcs E ≥ 1,9 m/s és DVI ≥ 2,5 normál PHT mellett: mechanikus billentyűknél a specificitás közel 100%. TEE-vel érdemes megerősíteni.",
+    mvHighFlowNote: "Gondolj műbillentyű MR-re, magas flow-ra (gyorsult keringés) vagy PPM-re.",
+    mvDiscordantNote: "A PHT > 200 ms, de a csúcs E, az átlag gradiens és a DVI is normális.",
+    heartRateAbbr: "Pulzus", prostheticMvReport: "Mitrális műbillentyű",
     clear: "Összes törlése", results: "Számított eredmények",
     copyReport: "Másolás vágólapra", copied: "Vágólapra másolva",
     copyEmpty: "Nincs még mit másolni", copyFailed: "Sikertelen másolás — másold ki kézzel",
@@ -317,6 +339,73 @@ const calculateAvVerdict = (at, atEt, dviVti, dviVmax, eoai, lang) => {
   return { category, note };
 };
 
+// Prosthetic MV DVI: VTI through the prosthetic mitral valve (CW, the same
+// "MV VTI (CW)" field the native MVA(VTI) uses) over LVOT VTI — the inverse
+// of the aortic DVI, per Zoghbi et al. 2024 (Figure 5, Table 11).
+/**
+ * @param {string} mvVtiCw
+ * @param {string} lvotVti
+ * @param {string} lang
+ * @returns {number | null}
+ */
+const calculateMvDvi = (mvVtiCw, lvotVti, lang) => {
+  const mv = parseNumber(mvVtiCw, lang), lv = parseNumber(lvotVti, lang);
+  if (mvVtiCw && lvotVti && !isNaN(mv) && !isNaN(lv) && mv > 0 && lv > 0) return mv / lv;
+  return null;
+};
+
+// Prosthetic MV overall verdict. Unlike the aortic one, the guideline has
+// no decision-tree figure for prosthetic mitral stenosis, so this is a
+// synthesis of two of its tables (per user direction), not a transcription:
+//   - Table 11 (stenosis): peak E, mean gradient, DVI and PHT bands.
+//   - Table 12 (significant MR in mechanical valves *with normal PHT*):
+//     peak E >= 1.9 m/s and DVI >= 2.5 together give specificity close to
+//     100%; the guideline also notes that peak E, mean gradient and DVI are
+//     raised by significant prosthetic MR, not only by stenosis.
+// PHT is the discriminator: flow-dependent parameters rise with both
+// stenosis and MR (or high flow / PPM), but PHT only lengthens with
+// stenosis. So PHT is required; without it this returns null.
+//   PHT < 130 (normal):   E >= 1.9 AND DVI >= 2.5 -> "mr";
+//                         any of E >= 1.9 / mean > 5 / DVI >= 2.2 -> "highFlow";
+//                         otherwise -> "normal".
+//   PHT 130-200:          -> "possibleStenosis".
+//   PHT > 200:            any flow-dependent parameter raised -> "stenosis";
+//                         all normal -> "discordant" (a long PHT with
+//                         normal gradients doesn't fit either picture).
+// "Raised" uses Table 11's own normal cutoffs (E >= 1.9, mean > 5, DVI
+// >= 2.2). EOA is graded on its own row and deliberately left out here,
+// since it's derived from the same VTI as DVI.
+/**
+ * @param {string} peakE
+ * @param {string} meanGradient
+ * @param {number | null} dvi
+ * @param {string} pht
+ * @param {string} lang
+ * @returns {{ category: string, note: string | null } | null}
+ */
+const calculateMvVerdict = (peakE, meanGradient, dvi, pht, lang) => {
+  const p = parseNumber(pht, lang);
+  if (!pht || isNaN(p) || p <= 0) return null;
+  const e = parseNumber(peakE, lang), m = parseNumber(meanGradient, lang);
+  const eVal = peakE && !isNaN(e) && e > 0 ? e : null;
+  const mVal = meanGradient && !isNaN(m) && m >= 0 ? m : null;
+  if (eVal === null && mVal === null && dvi === null) return null;
+
+  const eHigh = eVal !== null && eVal >= 1.9;
+  const mHigh = mVal !== null && mVal > 5;
+  const dviHigh = dvi !== null && dvi >= 2.2;
+  const anyHigh = eHigh || mHigh || dviHigh;
+
+  if (p < 130) {
+    if (eHigh && dvi !== null && dvi >= 2.5) return { category: "mr", note: "mrNote" };
+    if (anyHigh) return { category: "highFlow", note: "highFlowNote" };
+    return { category: "normal", note: null };
+  }
+  if (p <= 200) return { category: "possibleStenosis", note: null };
+  if (anyHigh) return { category: "stenosis", note: null };
+  return { category: "discordant", note: "discordantNote" };
+};
+
 // ---- severity grading ----
 // Grading bands transcribed from Echo checklist.xlsx.
 // Ambiguous range boundaries are resolved toward the higher-severity side.
@@ -330,6 +419,11 @@ const gradeLabels = {
 };
 const gradeFns = {
   mrEro: v => v < 0.2 ? "mild" : v <= 0.4 ? "moderate" : "severe",
+  // Prosthetic MR, Table 13 (Zoghbi et al. 2024): EROA <0.20 / 0.20-0.39 /
+  // >=0.40 cm² — identical to mrEro above except exactly 0.40 is severe
+  // here. Used via the rows array's gradeKey when state.prostheticMV is on.
+  // (Reg. vol./fraction cutoffs in Table 13 match mrRegVol/mrRegFraction.)
+  mrEroProsthetic: v => v < 0.2 ? "mild" : v < 0.4 ? "moderate" : "severe",
   mrRegVol: v => v < 30 ? "mild" : v < 60 ? "moderate" : "severe",
   mrRegFraction: v => v < 30 ? "mild" : v < 50 ? "moderate" : "severe",
   arEro: v => v < 0.1 ? "mild" : v < 0.3 ? "moderate" : "severe",
@@ -370,6 +464,27 @@ const gradeFns = {
   // cutoffs, respectively) via a precomputed grade passed straight into
   // the rows array in computeResults, not a static gradeFns lookup.
   avAtEt: v => v < 0.32 ? "normal" : v <= 0.37 ? "possibleStenosis" : "stenosis",
+  // Prosthetic MV, Table 11 (Zoghbi et al. 2024): Normal / Possible
+  // stenosis / Suggests significant stenosis, for mechanical and biological
+  // valves alike (the table notes slightly higher peak E, mean gradient and
+  // DVI cutoffs may apply to some bioprostheses). "stenosis" here is the
+  // table's "suggests significant stenosis" column. Only used when
+  // state.prostheticMV is on — see computeResults.
+  // Peak E: <1.9 / 1.9-2.5 / >=2.5 m/s (2.5 itself is significant).
+  mvPeakE: v => v < 1.9 ? "normal" : v < 2.5 ? "possibleStenosis" : "stenosis",
+  // Mean gradient: <=5 / 6-10 / >10 mmHg — the source leaves a 5-6 gap;
+  // anything above 5 is treated as possible stenosis.
+  mvMeanGradient: v => v <= 5 ? "normal" : v <= 10 ? "possibleStenosis" : "stenosis",
+  // DVI (VTI PrMV / VTI LVOT): <2.2 / 2.2-2.5 / >2.5.
+  mvDvi: v => v < 2.2 ? "normal" : v <= 2.5 ? "possibleStenosis" : "stenosis",
+  // EOA: >=2.0 / 1-2 / <1 cm². (Graded a second way, against the selected
+  // valve's own reference EOA, by gradeMvEoaVsReference — per user
+  // direction both are shown, on separate rows.)
+  mvEoa: v => v >= 2.0 ? "normal" : v >= 1 ? "possibleStenosis" : "stenosis",
+  // PHT: <130 / 130-200 / >200 ms. Replaces the native "MVA (PHT)" row in
+  // prosthetic mode — the guideline warns 220/PHT is inaccurate for
+  // prostheses (overestimates EOA, particularly in normal valves).
+  mvPht: v => v < 130 ? "normal" : v <= 200 ? "possibleStenosis" : "stenosis",
   // Only a single cutoff is defined for this metric (per user direction):
   // below 1 reads as mild, at/above 1 reads as severe, moderate is unused.
   mvVtiLvotVti: v => v < 1 ? "mild" : "severe",
@@ -393,6 +508,19 @@ const gradeFns = {
 const gradeEoaiPPM = (avai, bmi) => {
   if (bmi >= 30) return avai > 0.70 ? "normal" : avai >= 0.56 ? "moderate" : "severe";
   return avai > 0.85 ? "normal" : avai >= 0.66 ? "moderate" : "severe";
+};
+// Prosthetic MV EOAi grading, Table 7 "Mitral EOA*" row: BMI < 30 kg/m²
+// normal >1.2, moderate 1.2-0.91, severe <=0.90 cm²/m²; BMI >= 30 normal
+// >1.0, moderate 1.0-0.76, severe <=0.75. Same precomputed-grade path as
+// gradeEoaiPPM above.
+/**
+ * @param {number} eoai
+ * @param {number} bmi
+ * @returns {string}
+ */
+const gradeMvEoaiPPM = (eoai, bmi) => {
+  if (bmi >= 30) return eoai > 1.0 ? "normal" : eoai > 0.75 ? "moderate" : "severe";
+  return eoai > 1.2 ? "normal" : eoai > 0.90 ? "moderate" : "severe";
 };
 
 // ---- severity reference content ----
@@ -517,6 +645,142 @@ function avAlgorithmFigure(lang) {
         <rect x="84" y="314" width="78" height="56" rx="10" fill="var(--grade-mild-bg)" opacity="0.6" stroke="var(--grade-mild-text)" stroke-opacity="0.3" stroke-width="1"></rect>
         <text x="123" y="335" text-anchor="middle" font-size="11" font-weight="700" fill="var(--grade-mild-text)">${t.eoaiLow}</text>
         <text x="123" y="350" text-anchor="middle" font-size="11" fill="var(--grade-mild-text)">${t.eoaiLowLabel}</text>
+      </svg>
+      <figcaption>${t.caption}</figcaption>
+    </figure>
+  `;
+}
+
+// Inline SVG for the "prosthetic mitral valve regurgitation" integration
+// algorithm (Zoghbi et al. 2024, Figure 21), same technique and color
+// language as avAlgorithmFigure above: mild/moderate/severe columns reuse
+// the --grade-mild/-moderate/-severe tokens. Laid out for phone width, so
+// the long "specific criteria" bullet lists and the footnotes live in
+// severityInfo.mvProsthetic.figureNotes as prose instead of inside the
+// boxes. The "intermediate values + 3 specific criteria for severe MR ->
+// severe" elbow is marked with † here and spelled out in those notes, since
+// its source label doesn't fit between the boxes at this width.
+function mvrAlgorithmFigure(lang) {
+  const t = lang === "hu"
+    ? {
+      caption: "Az ASE 2024 algoritmusa az MR súlyosságának többparaméteres megítélésére mitrális billentyűcsere után.",
+      title: "Mitrális műbillentyű regurgitáció",
+      q1: "Teljesíti-e az MR az enyhe vagy", q2: "súlyos MR specifikus kritériumait?",
+      yesMild: "Igen, enyhe", yesSevere: "Igen, súlyos",
+      mild: ["Enyhe MR", "specifikus", "kritériumai*"],
+      mid: ["Köztes értékek:", "MR valószínűleg", "közepes"],
+      severe: ["Súlyos MR", "specifikus", "kritériumai*"],
+      twoThree: "2–3 kritérium",
+      quant1: "Kvantitatív módszerek", quant2: "alkalmazása, ahol lehetséges",
+      defMild: "≥4 kritérium: biztosan enyhe", defSevere: "≥4 kritérium: biztosan súlyos",
+      qMild: ["RVol < 30 ml", "RF < 30%", "EROA < 0,2 cm²**"],
+      qMid: ["RVol 30–59 ml¶", "RF 30–49%", "EROA 0,2–0,39**"],
+      qSevere: ["RVol ≥ 60 ml¶", "RF ≥ 50%", "EROA ≥ 0,4 cm²**"],
+      outMild: "Enyhe MR", outMid: "Közepes MR", outSevere: "Súlyos MR",
+      indLeft: ["Rossz TTE képminőség vagy", "bizonytalan Doppler mérés;", "ellentmondó adatok"],
+      ind1: "Nem eldönthető MR", ind2: "TEE vagy CMR javasolt",
+    }
+    : {
+      caption: "The ASE 2024 algorithm for integrating multiple parameters of MR severity after mitral valve replacement.",
+      title: "Prosthetic mitral valve regurgitation",
+      q1: "Does MR meet specific criteria", q2: "for mild or severe MR?",
+      yesMild: "Yes, mild", yesSevere: "Yes, severe",
+      mild: ["Specific criteria", "for mild MR*", "(list below)"],
+      mid: ["Intermediate", "values: MR", "probably moderate"],
+      severe: ["Specific criteria", "for severe MR*", "(list below)"],
+      twoThree: "2–3 criteria",
+      quant1: "Perform quantitative methods", quant2: "whenever possible",
+      defMild: "≥4 criteria: definitely mild", defSevere: "≥4 criteria: definitely severe",
+      qMild: ["RVol < 30 ml", "RF < 30%", "EROA < 0.2 cm²**"],
+      qMid: ["RVol 30–59 ml¶", "RF 30–49%", "EROA 0.2–0.39**"],
+      qSevere: ["RVol ≥ 60 ml¶", "RF ≥ 50%", "EROA ≥ 0.4 cm²**"],
+      outMild: "Mild MR", outMid: "Moderate MR", outSevere: "Severe MR",
+      indLeft: ["Poor TTE quality or low", "confidence in Doppler data;", "discordant findings"],
+      ind1: "Indeterminate MR", ind2: "Consider TEE or CMR",
+    };
+  // Three stacked lines of text centered at x, starting at baseline y.
+  const lines = (arr, x, y, step, size, fill, boldFirst = false) => arr.map((s, i) =>
+    `<text x="${x}" y="${y + i * step}" text-anchor="middle" font-size="${size}" font-weight="${boldFirst && i > 0 ? 400 : 700}" fill="${fill}">${s}</text>`).join("");
+  const arrow = (x1, y1, x2, y2) =>
+    `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#mvr-arrow)"></line>`;
+  const g = { mild: "var(--grade-mild-", mid: "var(--grade-moderate-", sev: "var(--grade-severe-" };
+  return `
+    <figure class="wiki-figure">
+      <svg viewBox="0 0 380 432" role="img" aria-label="${t.caption}">
+        <defs>
+          <marker id="mvr-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--text-sub)"></path>
+          </marker>
+        </defs>
+
+        <!-- Title + question -->
+        <rect x="60" y="6" width="260" height="28" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+        <text x="190" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-main)">${t.title}</text>
+        ${arrow(190, 34, 190, 46)}
+        <rect x="40" y="48" width="300" height="40" rx="10" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.5"></rect>
+        ${lines([t.q1, t.q2], 190, 64, 15, 11, "var(--text-main)")}
+
+        <!-- Branches to the three criteria columns -->
+        ${arrow(110, 88, 70, 112)}
+        ${arrow(190, 88, 190, 112)}
+        ${arrow(270, 88, 310, 112)}
+        <text x="82" y="102" text-anchor="end" font-size="9.5" fill="var(--text-sub)">${t.yesMild}</text>
+        <text x="298" y="102" text-anchor="start" font-size="9.5" fill="var(--text-sub)">${t.yesSevere}</text>
+
+        <rect x="5" y="114" width="118" height="50" rx="10" fill="${g.mild}bg)"></rect>
+        ${lines(t.mild, 64, 130, 13, 10, `${g.mild}text)`, true)}
+        <rect x="131" y="114" width="118" height="50" rx="10" fill="${g.mid}bg)"></rect>
+        ${lines(t.mid, 190, 130, 13, 10, `${g.mid}text)`)}
+        <rect x="257" y="114" width="118" height="50" rx="10" fill="${g.sev}bg)"></rect>
+        ${lines(t.severe, 316, 130, 13, 10, `${g.sev}text)`, true)}
+
+        <!-- 2-3 criteria / intermediate -> quantitative methods -->
+        ${arrow(92, 164, 104, 188)}
+        ${arrow(190, 164, 190, 188)}
+        ${arrow(288, 164, 276, 188)}
+        <text x="58" y="182" text-anchor="middle" font-size="9" fill="var(--text-sub)">${t.twoThree}</text>
+        <text x="200" y="180" text-anchor="start" font-size="9" fill="var(--text-sub)">**</text>
+        <text x="322" y="182" text-anchor="middle" font-size="9" fill="var(--text-sub)">${t.twoThree}</text>
+        <rect x="40" y="190" width="300" height="36" rx="8" fill="none" stroke="var(--text-sub)" stroke-width="1.2" stroke-dasharray="4 3"></rect>
+        ${lines([t.quant1, t.quant2], 190, 205, 14, 10.5, "var(--text-main)")}
+
+        <!-- >=4 criteria bypasses straight to the outcome -->
+        <line x1="8" y1="164" x2="8" y2="328" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#mvr-arrow)"></line>
+        <line x1="372" y1="164" x2="372" y2="328" stroke="var(--text-sub)" stroke-width="1.5" marker-end="url(#mvr-arrow)"></line>
+        <text transform="translate(19 300) rotate(-90)" font-size="8.5" fill="var(--text-sub)">${t.defMild}</text>
+        <text transform="translate(361 172) rotate(90)" font-size="8.5" fill="var(--text-sub)">${t.defSevere}</text>
+
+        <!-- Quantitative bands -->
+        ${arrow(110, 226, 70, 244)}
+        ${arrow(190, 226, 190, 244)}
+        ${arrow(270, 226, 310, 244)}
+        <rect x="20" y="246" width="98" height="48" rx="8" fill="${g.mild}bg)"></rect>
+        ${lines(t.qMild, 69, 261, 13, 9, `${g.mild}text)`)}
+        <rect x="141" y="246" width="98" height="48" rx="8" fill="${g.mid}bg)"></rect>
+        ${lines(t.qMid, 190, 261, 13, 9, `${g.mid}text)`)}
+        <rect x="262" y="246" width="98" height="48" rx="8" fill="${g.sev}bg)"></rect>
+        ${lines(t.qSevere, 311, 261, 13, 9, `${g.sev}text)`)}
+
+        <!-- Down to outcomes; † = intermediate values + 3 specific severe criteria -> severe -->
+        ${arrow(69, 294, 66, 328)}
+        ${arrow(190, 294, 190, 328)}
+        ${arrow(311, 294, 314, 328)}
+        <path d="M239,282 H250 L270,328" fill="none" stroke="var(--text-sub)" stroke-width="1.2" stroke-dasharray="3 2" marker-end="url(#mvr-arrow)"></path>
+        <text x="252" y="308" font-size="10" font-weight="700" fill="var(--text-sub)">†</text>
+
+        <rect x="5" y="330" width="118" height="30" rx="10" fill="${g.mild}bg)" stroke="${g.mild}text)" stroke-opacity="0.35"></rect>
+        <text x="64" y="350" text-anchor="middle" font-size="12" font-weight="700" fill="${g.mild}text)">${t.outMild}</text>
+        <rect x="131" y="330" width="118" height="30" rx="10" fill="${g.mid}bg)" stroke="${g.mid}text)" stroke-opacity="0.35"></rect>
+        <text x="190" y="350" text-anchor="middle" font-size="12" font-weight="700" fill="${g.mid}text)">${t.outMid}</text>
+        <rect x="257" y="330" width="118" height="30" rx="10" fill="${g.sev}bg)" stroke="${g.sev}text)" stroke-opacity="0.35"></rect>
+        <text x="316" y="350" text-anchor="middle" font-size="12" font-weight="700" fill="${g.sev}text)">${t.outSevere}</text>
+
+        <!-- Indeterminate -->
+        <rect x="5" y="372" width="200" height="52" rx="8" fill="var(--subtle-bg)" stroke="var(--divider)" stroke-width="1.2"></rect>
+        ${lines(t.indLeft, 105, 390, 13, 9.5, "var(--text-sub)")}
+        ${arrow(205, 398, 225, 398)}
+        <rect x="227" y="372" width="148" height="52" rx="8" fill="var(--subtle-bg)" stroke="var(--text-sub)" stroke-width="1.5"></rect>
+        ${lines([t.ind1, t.ind2], 301, 393, 16, 11, "var(--text-main)", true)}
       </svg>
       <figcaption>${t.caption}</figcaption>
     </figure>
@@ -650,6 +914,92 @@ const severityInfo = {
         "This app's own Calculated Results grade DVI, AT, and AT/ET using Table 1's SAVR cutoffs directly; EOA is graded against the selected valve type/size's own reference EOA ± SD (see the picker above) using the same table's ±1 SD / ±2 SD bands, and only appears once a valve and size are picked.",
         "EOAi is graded using patient-prosthesis-mismatch cutoffs that depend on BMI (calculated in the background from weight/height): >0.85 cm²/m² is normal under BMI 30 kg/m² (>0.70 cm²/m² at/above it), down to ≤0.65 cm²/m² (≤0.55 cm²/m² at/above BMI 30) for severe mismatch.",
         "Table 2 (above, structural valve deterioration) compares serial studies rather than staging absolute severity, so it has no \"Normal\" column — a change below the \"Possible SVD\" thresholds simply isn't SVD. In combined stenosis and regurgitation, SVD may be present at lower thresholds than shown.",
+      ],
+    },
+    // Prosthetic MV (Zoghbi et al. 2024). Like avProsthetic, tables are
+    // numbered locally ("Table 1"-"Table 4"), not by their source numbers
+    // (Tables 11, 7, 12 and 13; the figure is Figure 21) — see CLAUDE.md.
+    // tableBeforeFigure is an array here (several tables before the
+    // figure); renderInfo accepts either a single spec or an array.
+    mvProsthetic: {
+      title: "Prosthetic Mitral Valve",
+      tableBeforeFigure: [
+        {
+          heading: "Table 1 — Doppler Findings Suggestive of Prosthetic Mitral Stenosis",
+          headers: ["Parameter", "Normal", "Possible stenosis", "Suggests significant stenosis"],
+          wrapHeaders: true,
+          colWidths: ["31%", "21%", "24%", "24%"],
+          rows: [
+            ["Peak velocity (m/s)†", "<1.9", "1.9–2.5", "≥2.5"],
+            ["Mean gradient (mmHg)†", "≤5", "6–10", ">10"],
+            ["VTI PrMV / VTI LVOT (DVI)†", "<2.2", "2.2–2.5", ">2.5"],
+            ["EOA (cm²)", "≥2.0", "1–2", "<1"],
+            ["PHT (ms)", "<130", "130–200", ">200"],
+          ],
+        },
+        {
+          heading: "Table 2 — Mitral Prosthesis-Patient Mismatch (EOAi, cm²/m²)",
+          headers: ["BMI", "Normal", "Moderate PPM", "Severe PPM"],
+          wrapHeaders: true,
+          colWidths: ["31%", "23%", "23%", "23%"],
+          rows: [
+            ["< 30 kg/m²", ">1.2", "1.2–0.91", "≤0.90"],
+            ["≥ 30 kg/m²", ">1.0", "1.0–0.76", "≤0.75"],
+          ],
+        },
+        {
+          heading: "Table 3 — TTE Findings Suggestive of Significant Prosthetic MR (Mechanical Valves, Normal PHT)",
+          // Sensitivity and specificity share one column so the table fits a
+          // phone screen without horizontal scrolling.
+          headers: ["Finding", "Sens. / spec.", "Comments"],
+          plainHeaders: true,
+          wrapHeaders: true,
+          colWidths: ["34%", "24%", "42%"],
+          rows: [
+            ["Peak mitral velocity ≥1.9 m/s*", "90% / 89%", "Also consider high flow, PPM"],
+            ["VTI PrMV / VTI LVOT ≥2.5*", "89% / 91%", "Measurement errors increase in atrial fibrillation; also consider PPM"],
+            ["Mean gradient ≥5 mmHg*", "90% / 70%", "At physiologic heart rates; also consider high flow, PPM"],
+            ["Maximal TR jet velocity >3 m/s*", "80% / 71%", "Consider residual postoperative pulmonary hypertension or other causes"],
+            ["LV stroke volume (2D/3D) >30% higher than systemic Doppler stroke volume", "Moderate / specific", "Validation lacking; suspect significant MR when LV function is normal or hyperdynamic and LVOT VTI is small (<16 cm)"],
+            ["Systolic flow convergence in the LV toward the prosthesis", "Low / specific", "Validation lacking; technically challenging to detect"],
+          ],
+        },
+      ],
+      figure: mvrAlgorithmFigure("en"),
+      figureNotes: [
+        "Specific criteria for mild MR: small, narrow central jet; VC width ≤0.3 cm; VC area <0.2 cm²; PISA radius absent or ≤0.3 cm at a Nyquist limit of 30–40 cm/s; mitral A-wave-dominant inflow; soft or incomplete jet by CW Doppler.",
+        "Specific criteria for severe MR: valve dehiscence, incomplete occluder closure or a flail bioprosthetic leaflet; VC width ≥0.7 cm or ≥2 moderate jets; VC area (1 or 2 jets) ≥0.4 cm²; PISA radius ≥1.0 cm at a Nyquist limit of 30–40 cm/s**; central large jet >50% of LA area; pulmonary vein systolic flow reversal.",
+        "≥4 specific criteria: definitely mild/severe. 2–3 criteria, or intermediate values: perform quantitative methods whenever possible. † Intermediate quantitative values together with 3 specific criteria for severe MR: severe MR.",
+        "Poor TTE quality, low confidence in the measured Doppler parameters, or discordant quantitative, qualitative and/or clinical data: MR is indeterminate — consider TEE or CMR.",
+        "* Color Doppler on TTE can underestimate MR severity because of flow masking (particularly in mechanical valves) and in eccentric, wall-impinging jets. ** EROA by PISA may overestimate severity if the PISA is ovoid, constrained by the LV wall. ¶ Regurgitant volume cutoffs for severe MR may be lower in low-flow conditions.",
+      ],
+      tableAfterFigure: {
+        heading: "Table 4 — Severity of Prosthetic Mitral Regurgitation (TTE and TEE)",
+        headers: ["Parameter", "Mild", "Moderate", "Severe"],
+        wrapHeaders: true,
+        colWidths: ["25%", "25%", "22%", "28%"],
+        rows: [
+          ["LV size", "Normal‡", "Normal or dilated", "Usually dilated"],
+          ["Prosthetic valve", "Usually normal", "Abnormal§", "Abnormal§"],
+          ["Color flow jet area", "Small, central (usually <4 cm² or <20% of LA area)", "Variable", "Large central (usually >8 cm² or >50% of LA area) or variable-size wall-impinging jet swirling in the LA"],
+          ["Flow convergence", "None or minimal", "Intermediate", "Large"],
+          ["Jet density (CW)", "Incomplete or faint", "Dense", "Dense"],
+          ["Jet contour (CW)", "Parabolic", "Usually parabolic", "Early peaking: triangular"],
+          ["Pulmonary venous flow", "Systolic dominance", "Systolic blunting", "Systolic flow reversal"],
+          ["VC width (cm)", "<0.3", "0.3–0.69", "≥0.7"],
+          ["RVol (ml/beat)", "<30", "30–59", "≥60"],
+          ["RF (%)", "<30", "30–49", "≥50"],
+          ["EROA (cm²)", "<0.20", "0.20–0.39", "≥0.40"],
+        ],
+      },
+      notes: [
+        "Table 1 applies to mechanical and biological valves alike; diagnostic accuracy is best when most parameters are normal, or most are abnormal. Values in the \"Possible stenosis\" column should prompt a closer look at valve function and at increased flow, increased heart rate, or PPM. † These parameters are also abnormal with significant prosthetic MR, and slightly higher cutoffs may be seen in some bioprostheses. Report the heart rate at which gradients were measured.",
+        "EOA should be calculated with the continuity equation (stroke volume through the LVOT ÷ VTI through the prosthesis, when there's no significant AR). EOA from PHT (220/PHT) is frequently inaccurate for prostheses and overestimates EOA, so this app hides MVA (PHT) in prosthetic mode and grades PHT directly instead.",
+        "Table 2: PPM is graded only when valve structure and motion are normal and the measured EOA is within 1 SD of the reference EOA. BMI is calculated in the background from weight/height, so this badge needs both (not a manually entered BSA).",
+        "Table 3 (data from Olmos et al.): when both peak velocity and the VTI ratio are elevated with a normal PHT, specificity for significant MR is close to 100%.",
+        "Table 4: ‡ LV size applies only to chronic lesions. § Abnormal mechanical valve: e.g. immobile occluder (valvular) or dehiscence/rocking (paravalvular regurgitation); abnormal biological valve: e.g. leaflet thickening or prolapse (valvular) or dehiscence/rocking (paravalvular). The quantitative parameters are less well validated than in native MR. In prosthetic mode, this app grades MR ERO with Table 4's cutoff (≥0.40 cm² severe).",
+        "How this app grades: peak E, mean gradient, DVI, EOA and PHT use Table 1. \"MV EOA vs. valve reference\" compares the measured EOA with the selected valve/size's own reference EOA (in SDs from its mean): within 1 SD below is normal, 1–2 SD below possible stenosis, more than 2 SD below stenosis. The guideline gives these SD bands only for aortic prostheses, so applying them to mitral valves is an extrapolation.",
+        "The overall \"Prosthetic MV assessment\" combines Tables 1 and 3; the guideline has no algorithm figure for prosthetic mitral stenosis. It needs PHT plus at least one of peak E, mean gradient or DVI. With a normal PHT (<130 ms): peak E ≥1.9 and DVI ≥2.5 suggest significant MR; any other raised value (peak E ≥1.9, mean gradient >5, DVI ≥2.2) flags MR, high flow or PPM; otherwise normal. PHT 130–200 ms: possible stenosis. PHT >200 ms: significant stenosis if any of those is raised, discordant if none is.",
       ],
     },
     ms: {
@@ -790,6 +1140,85 @@ const severityInfo = {
         "A 2. táblázat (fent, strukturális műbillentyű-degeneráció) soros vizsgálatokat hasonlít össze, nem abszolút súlyossági fokozatot állapít meg, ezért nincs \"Normális\" oszlopa — a „Lehetséges SVD” határérték alatti változás egyszerűen nem SVD. Kombinált stenosis és regurgitáció esetén az SVD alacsonyabb határértékeknél is fennállhat.",
       ],
     },
+    mvProsthetic: {
+      title: "Mitrális műbillentyű",
+      tableBeforeFigure: [
+        {
+          heading: "1. táblázat — Mitrális műbillentyű-stenosisra utaló Doppler eltérések",
+          headers: ["Paraméter", "Normális", "Lehetséges stenosis", "Jelentős stenosisra utal"],
+          wrapHeaders: true,
+          colWidths: ["31%", "21%", "24%", "24%"],
+          rows: [
+            ["Csúcssebesség (m/s)†", "<1,9", "1,9–2,5", "≥2,5"],
+            ["Átlag grádiens (Hgmm)†", "≤5", "6–10", ">10"],
+            ["VTI PrMV / VTI LVOT (DVI)†", "<2,2", "2,2–2,5", ">2,5"],
+            ["EOA (cm²)", "≥2,0", "1–2", "<1"],
+            ["PHT (ms)", "<130", "130–200", ">200"],
+          ],
+        },
+        {
+          heading: "2. táblázat — Mitrális patient-prosthesis mismatch (EOAi, cm²/m²)",
+          headers: ["BMI", "Normális", "Közepes PPM", "Súlyos PPM"],
+          wrapHeaders: true,
+          colWidths: ["31%", "23%", "23%", "23%"],
+          rows: [
+            ["< 30 kg/m²", ">1,2", "1,2–0,91", "≤0,90"],
+            ["≥ 30 kg/m²", ">1,0", "1,0–0,76", "≤0,75"],
+          ],
+        },
+        {
+          heading: "3. táblázat — Jelentős műbillentyű MR-re utaló TTE eltérések (mechanikus billentyű, normál PHT)",
+          headers: ["Eltérés", "Szenz. / spec.", "Megjegyzés"],
+          plainHeaders: true,
+          wrapHeaders: true,
+          colWidths: ["34%", "24%", "42%"],
+          rows: [
+            ["Mitrális csúcssebesség ≥1,9 m/s*", "90% / 89%", "Gondolj magas flow-ra, PPM-re is"],
+            ["VTI PrMV / VTI LVOT ≥2,5*", "89% / 91%", "Pitvarfibrillációban nő a mérési hiba; gondolj PPM-re is"],
+            ["Átlag grádiens ≥5 Hgmm*", "90% / 70%", "Fiziológiás szívfrekvencián; gondolj magas flow-ra, PPM-re is"],
+            ["Maximális TR jet sebesség >3 m/s*", "80% / 71%", "Gondolj reziduális posztoperatív pulmonalis hypertoniára vagy egyéb okra"],
+            ["2D/3D bal kamrai verővolumen >30%-kal nagyobb a Doppler szisztémás verővolumennél", "Közepes / specifikus", "Nem validált; jelentős MR gyanúja normál vagy hiperdinám bal kamrai funkció és kis LVOT VTI (<16 cm) esetén"],
+            ["Szisztolés flow-konvergencia a bal kamrában a műbillentyű felé", "Alacsony / specifikus", "Nem validált; technikailag nehezen észlelhető"],
+          ],
+        },
+      ],
+      figure: mvrAlgorithmFigure("hu"),
+      figureNotes: [
+        "Az enyhe MR specifikus kritériumai: kicsi, keskeny centrális jet; VC szélesség ≤0,3 cm; VC terület <0,2 cm²; PISA radius nincs vagy ≤0,3 cm 30–40 cm/s Nyquist-határnál; A-hullám domináns mitrális beáramlás; halvány vagy hiányos jet CW Dopplerrel.",
+        "A súlyos MR specifikus kritériumai: billentyű-dehiscencia, az occluder hiányos záródása vagy flail biológiai vitorla; VC szélesség ≥0,7 cm vagy ≥2 közepes jet; VC terület (1 vagy 2 jet) ≥0,4 cm²; PISA radius ≥1,0 cm 30–40 cm/s Nyquist-határnál**; nagy centrális jet a bal pitvar területének >50%-a; pulmonalis vénás szisztolés reverz flow.",
+        "≥4 specifikus kritérium: biztosan enyhe/súlyos. 2–3 kritérium vagy köztes értékek: kvantitatív módszerek, ahol lehetséges. † Köztes kvantitatív értékek és 3 súlyos MR-re specifikus kritérium együtt: súlyos MR.",
+        "Rossz TTE képminőség, a mért Doppler paraméterek bizonytalansága, vagy ellentmondó kvantitatív, kvalitatív és/vagy klinikai adatok esetén az MR nem eldönthető — TEE vagy CMR javasolt.",
+        "* A TTE color Doppler alábecsülheti az MR súlyosságát a flow-maszkolás miatt (főleg mechanikus billentyűknél), illetve excentrikus, falhoz tapadó jeteknél. ** A PISA-alapú EROA túlbecsülheti a súlyosságot, ha a PISA ovális, a bal kamra fala által korlátozott. ¶ Alacsony flow mellett a súlyos MR regurgitációs volumen határértéke alacsonyabb lehet.",
+      ],
+      tableAfterFigure: {
+        heading: "4. táblázat — A mitrális műbillentyű-regurgitáció súlyossága (TTE és TEE)",
+        headers: ["Paraméter", "Enyhe", "Közepes", "Súlyos"],
+        wrapHeaders: true,
+        colWidths: ["25%", "25%", "22%", "28%"],
+        rows: [
+          ["Bal kamra mérete", "Normális‡", "Normális vagy tágult", "Általában tágult"],
+          ["Műbillentyű", "Általában normális", "Kóros§", "Kóros§"],
+          ["Color jet területe", "Kicsi, centrális (általában <4 cm² vagy a bal pitvar <20%-a)", "Változó", "Nagy centrális (általában >8 cm² vagy a bal pitvar >50%-a) vagy változó méretű, falhoz tapadó, a pitvarban örvénylő jet"],
+          ["Flow-konvergencia", "Nincs vagy minimális", "Köztes", "Nagy"],
+          ["Jet denzitás (CW)", "Hiányos vagy halvány", "Denz", "Denz"],
+          ["Jet kontúr (CW)", "Parabolikus", "Általában parabolikus", "Korai csúcsú: háromszög"],
+          ["Pulmonalis vénás áramlás", "Szisztolés dominancia", "Szisztolés „blunting”", "Szisztolés reverz flow"],
+          ["VC szélesség (cm)", "<0,3", "0,3–0,69", "≥0,7"],
+          ["RVol (ml/ütés)", "<30", "30–59", "≥60"],
+          ["RF (%)", "<30", "30–49", "≥50"],
+          ["EROA (cm²)", "<0,20", "0,20–0,39", "≥0,40"],
+        ],
+      },
+      notes: [
+        "Az 1. táblázat mechanikus és biológiai billentyűkre egyaránt vonatkozik; a diagnosztikus pontosság akkor a legjobb, ha a paraméterek többsége normális, vagy többsége kóros. A „Lehetséges stenosis” oszlop értékei a billentyűfunkció alaposabb vizsgálatára, illetve fokozott flow, magas szívfrekvencia vagy PPM mérlegelésére kell, hogy késztessenek. † Ezek a paraméterek jelentős műbillentyű MR esetén is kórosak, és egyes biológiai billentyűknél kissé magasabb határértékek is előfordulhatnak. A grádiensek mellett a mérés közbeni szívfrekvenciát is rögzíteni kell.",
+        "Az EOA-t a kontinuitási egyenlettel kell számolni (LVOT verővolumen ÷ a műbillentyűn mért VTI, ha nincs jelentős AR). A PHT-ból számolt EOA (220/PHT) műbillentyűknél gyakran pontatlan és túlbecsül, ezért az alkalmazás műbillentyű módban elrejti az MVA (PHT) sort, és helyette magát a PHT-t értékeli.",
+        "2. táblázat: a PPM csak normális billentyűszerkezet és -mozgás mellett, és ha a mért EOA a referencia EOA 1 SD-n belül van, értékelhető. A BMI-t a háttérben, testsúlyból és testmagasságból számoljuk, ezért ehhez mindkettő kell (kézzel beírt BSA nem elég).",
+        "3. táblázat (Olmos és mtsai adatai): ha normál PHT mellett a csúcssebesség és a VTI arány is emelkedett, a jelentős MR-re vonatkozó specificitás közel 100%.",
+        "4. táblázat: ‡ A bal kamra mérete csak krónikus elváltozásnál értékelhető. § Kóros mechanikus billentyű: pl. mozdulatlan occluder (valvuláris) vagy dehiscencia/billegés (paravalvuláris regurgitáció); kóros biológiai billentyű: pl. vitorla-megvastagodás vagy prolapsus (valvuláris), illetve dehiscencia/billegés (paravalvuláris). A kvantitatív paraméterek kevésbé validáltak, mint natív MR-ben. Műbillentyű módban az alkalmazás az MR ERO-t a 4. táblázat határértékével értékeli (≥0,40 cm² súlyos).",
+        "Az alkalmazás értékelése: a csúcs E, az átlag grádiens, a DVI, az EOA és a PHT az 1. táblázat szerint. Az „MV EOA a referenciához képest” sor a mért EOA-t a kiválasztott billentyű/méret saját referencia EOA-jához hasonlítja (az átlagtól mért SD-ben): legfeljebb 1 SD-vel alatta normális, 1–2 SD-vel alatta lehetséges stenosis, több mint 2 SD-vel alatta stenosis. Ezeket az SD-sávokat az irányelv csak aorta műbillentyűkre adja meg, így mitrális billentyűre alkalmazásuk extrapoláció.",
+        "Az összesített „Mitrális műbillentyű értékelés” az 1. és 3. táblázatot kombinálja; az irányelvben nincs algoritmus-ábra a mitrális műbillentyű-stenosisra. PHT kell hozzá, plusz legalább egy a csúcs E, az átlag grádiens és a DVI közül. Normál PHT (<130 ms) mellett: csúcs E ≥1,9 és DVI ≥2,5 jelentős MR-re utal; bármely más emelkedett érték (csúcs E ≥1,9, átlag grádiens >5, DVI ≥2,2) MR-re, magas flow-ra vagy PPM-re utal; egyébként normális. PHT 130–200 ms: lehetséges stenosis. PHT >200 ms: jelentős stenosis, ha bármelyik emelkedett, ellentmondó, ha egyik sem.",
+      ],
+    },
     ms: {
       title: "Mitrális stenosis",
       headers: ["Paraméter", "Progresszív (enyhe)", "Progresszív (közepes)", "Súlyos"],
@@ -817,6 +1246,7 @@ const uiStrings = {
     selectValve: "Select valve", selectSize: "Select size",
     valveNormalValues: "Normal values for this valve", valvePeakGradient: "Peak gradient",
     valveMeanGradient: "Mean gradient", valveEoa: "EOA", valveDvi: "DVI",
+    valvePeakVelocity: "Peak velocity", valvePht: "PHT",
     valveThirdPartyTag: "third-party data",
     valveThirdPartyNote: "Not from the official guideline: this valve is not included in Zoghbi et al. 2024 (ASE), so these values are third-party information and have not been verified against a primary source.",
   },
@@ -830,6 +1260,7 @@ const uiStrings = {
     selectValve: "Billentyű kiválasztása", selectSize: "Méret kiválasztása",
     valveNormalValues: "Normál értékek erre a billentyűre", valvePeakGradient: "Csúcs gradiens",
     valveMeanGradient: "Átlag gradiens", valveEoa: "EOA", valveDvi: "DVI",
+    valvePeakVelocity: "Csúcssebesség", valvePht: "PHT",
     valveThirdPartyTag: "külső forrás",
     valveThirdPartyNote: "Nem a hivatalos irányelvből származik: ez a billentyű nem szerepel a Zoghbi et al. 2024 (ASE) irányelvben, ezért ezek az értékek harmadik féltől származó információk, és elsődleges forrással nem ellenőrizték őket.",
   },
@@ -842,6 +1273,7 @@ const infoAriaLabels = {
     as: "Aortic stenosis severity reference",
     ms: "Mitral stenosis severity reference",
     avProsthetic: "Elevated prosthetic aortic valve gradient algorithm",
+    mvProsthetic: "Prosthetic mitral valve reference",
   },
   hu: {
     mr: "Mitrális regurgitáció súlyossági referencia",
@@ -850,6 +1282,7 @@ const infoAriaLabels = {
     as: "Aorta stenosis súlyossági referencia",
     ms: "Mitrális stenosis súlyossági referencia",
     avProsthetic: "Emelkedett aorta műbillentyű grádiens algoritmus",
+    mvProsthetic: "Mitrális műbillentyű referencia",
   },
 };
 let currentInfoTopic = null;
@@ -859,7 +1292,9 @@ let currentInfoTopic = null;
 // looks identical to the ones behind the calculator's ⓘ buttons —
 // .info-table-wrap / .info-table are global CSS, not scoped to the info
 // overlay, so this is safe to reuse anywhere in .wiki-body too.
-// spec: { headers[], rows[], colWidths?, wide?, wrapHeaders? }
+// spec: { headers[], rows[], colWidths?, wide?, wrapHeaders?, plainHeaders? }
+// plainHeaders skips the mild/moderate/severe header colors, for a table
+// whose columns aren't severity grades (e.g. sensitivity/specificity).
 // A row cell may be a plain string, or { text, span } for a colspan.
 // wrapHeaders lets a long header (e.g. "Possible stenosis") wrap onto a
 // second line instead of forcing its column wide enough for one — combine
@@ -867,7 +1302,7 @@ let currentInfoTopic = null;
 function buildSeverityTable(spec) {
   const colClasses = ["", "col-mild", "col-moderate", "col-severe", "col-massive", "col-torrential"];
   const theadCells = spec.headers.map((h, i) => {
-    const cls = colClasses[i] || "";
+    const cls = spec.plainHeaders ? "" : colClasses[i] || "";
     return `<th${cls ? ` class="${cls}"` : ""}>${h}</th>`;
   }).join("");
   const bodyRows = spec.rows.map(r => {
@@ -914,9 +1349,11 @@ function renderInfo(topicKey) {
   // buildSeverityTable's own spec fields) gets its own <h3> above the
   // table, since two tables sandwiching one figure need distinguishing —
   // a single top-level info.title isn't enough for both.
-  const tableBeforeHtml = info.tableBeforeFigure
-    ? (info.tableBeforeFigure.heading ? `<h3>${info.tableBeforeFigure.heading}</h3>` : "") + buildSeverityTable(info.tableBeforeFigure)
-    : "";
+  // Either may also be an array of specs (mvProsthetic has three tables
+  // before its figure), rendered in order.
+  const headedTables = (spec) => (spec ? [].concat(spec) : [])
+    .map(t => (t.heading ? `<h3>${t.heading}</h3>` : "") + buildSeverityTable(t)).join("");
+  const tableBeforeHtml = headedTables(info.tableBeforeFigure);
   const figureHtml = info.figure || "";
   // figureNotes are specifically about reading the figure/algorithm (e.g.
   // its footnotes, the outcomes it can produce) — rendered directly under
@@ -925,9 +1362,7 @@ function renderInfo(topicKey) {
   const figureNotesHtml = info.figureNotes && info.figureNotes.length
     ? `<div class="info-notes"><ul>${info.figureNotes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
     : "";
-  const tableAfterHtml = info.tableAfterFigure
-    ? (info.tableAfterFigure.heading ? `<h3>${info.tableAfterFigure.heading}</h3>` : "") + buildSeverityTable(info.tableAfterFigure)
-    : "";
+  const tableAfterHtml = headedTables(info.tableAfterFigure);
   const tableHtml = info.headers ? buildSeverityTable(info) : "";
   const notesHtml = info.notes && info.notes.length
     ? `<div class="info-notes"><h3>${uiStrings[state.language].notes}</h3><ul>${info.notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
@@ -1005,38 +1440,87 @@ function loadWikiTopicBody(id) {
   return wikiTopicBodyPromises[id];
 }
 
-// ---- Prosthetic aortic valve type/size picker ----
-// Reference-only lookup (type + size -> expected normal Doppler values,
-// per Zoghbi et al. 2024 — see prosthetic-data/aortic-valves.js for the
-// full citation and data-entry notes) — never feeds into a calculation.
+// ---- Prosthetic valve type/size picker (aortic + mitral) ----
+// Type + size -> expected normal Doppler values, per Zoghbi et al. 2024
+// (see prosthetic-data/aortic-valves.js and mitral-valves.js for the full
+// citations and data-entry notes). Started as a display-only lookup, but
+// the selection now also feeds grading: the aortic EOA badge
+// (gradeEoaAgainstReference) and the mitral "EOA vs. reference" row
+// (gradeMvEoaVsReference) both compare against the picked valve+size.
+//
+// One implementation serves both positions: valvePositions maps a position
+// key ("av"/"mv") to its data file, the window global that file registers,
+// and the ids of its own copy of the controls in index.html. The full-
+// screen #valveOverlay is shared — activeValvePos records which position
+// opened it. Selection state lives in state.valveSel[pos].
+//
 // Same lazy-load-on-first-need pattern as loadWikiTopicBody: the data
-// isn't needed until the picker is opened or the size/reference already
-// has a valve chosen, so it costs nothing for anyone not using prosthetic-
-// AV mode. Still listed in sw.js PRECACHE_URLS, so it works offline too.
-let prostheticAorticValvesPromise = null;
-function loadProstheticAorticValves() {
-  if (window.prostheticAorticValves) return Promise.resolve(window.prostheticAorticValves);
-  if (prostheticAorticValvesPromise) return prostheticAorticValvesPromise;
-  prostheticAorticValvesPromise = new Promise((resolve, reject) => {
+// isn't loaded until that position's prosthetic toggle is turned on or its
+// picker is opened. Both files are still listed in sw.js PRECACHE_URLS, so
+// they work offline too.
+const valvePositions = {
+  av: {
+    src: "./prosthetic-data/aortic-valves.js", global: "prostheticAorticValves",
+    categoryToggle: "#valveCategoryToggle", typeBtn: "#valveTypeBtn",
+    sizeRow: "#valveSizeRow", sizeSelect: "#valveSizeSelect", reference: "#valveReference",
+  },
+  mv: {
+    src: "./prosthetic-data/mitral-valves.js", global: "prostheticMitralValves",
+    categoryToggle: "#mvValveCategoryToggle", typeBtn: "#mvValveTypeBtn",
+    sizeRow: "#mvValveSizeRow", sizeSelect: "#mvValveSizeSelect", reference: "#mvValveReference",
+  },
+};
+/** @type {Record<string, Promise<ProstheticValve[]>>} */
+const valveDataPromises = {};
+/**
+ * @param {string} pos
+ * @returns {Promise<ProstheticValve[]>}
+ */
+function loadProstheticValveData(pos) {
+  const cfg = valvePositions[pos];
+  if (window[cfg.global]) return Promise.resolve(window[cfg.global]);
+  if (valveDataPromises[pos]) return valveDataPromises[pos];
+  valveDataPromises[pos] = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "./prosthetic-data/aortic-valves.js";
+    script.src = cfg.src;
     script.onload = () => {
-      if (window.prostheticAorticValves) resolve(window.prostheticAorticValves);
-      else reject(new Error("prosthetic-data/aortic-valves.js loaded but didn't register data"));
+      if (window[cfg.global]) resolve(window[cfg.global]);
+      else reject(new Error(`${cfg.src} loaded but didn't register data`));
     };
-    script.onerror = () => reject(new Error("Failed to load prosthetic-data/aortic-valves.js"));
+    script.onerror = () => reject(new Error(`Failed to load ${cfg.src}`));
     document.head.appendChild(script);
   });
-  return prostheticAorticValvesPromise;
+  return valveDataPromises[pos];
 }
 
 let valveSearchQuery = "";
-function currentCategoryValves() {
-  return (window.prostheticAorticValves || []).filter(v => v.category === state.prostheticValveCategory);
+// Which position ("av"/"mv") the shared #valveOverlay was opened for.
+let activeValvePos = "av";
+/**
+ * @param {string} pos
+ * @returns {ProstheticValve[]}
+ */
+function currentCategoryValves(pos) {
+  return (window[valvePositions[pos].global] || []).filter(v => v.category === state.valveSel[pos].category);
+}
+/**
+ * @param {string} pos
+ * @returns {ProstheticValve | null}
+ */
+function selectedValve(pos) {
+  return (window[valvePositions[pos].global] || []).find(v => v.name === state.valveSel[pos].name) || null;
+}
+/**
+ * @param {string} pos
+ * @returns {ProstheticValveSize | null}
+ */
+function selectedValveSize(pos) {
+  const valve = selectedValve(pos);
+  return (valve && valve.sizes.find(s => s.size === state.valveSel[pos].size)) || null;
 }
 function renderValvePickerList() {
   const query = valveSearchQuery.trim();
-  const list = currentCategoryValves();
+  const list = currentCategoryValves(activeValvePos);
   const matches = query ? list.filter(v => foldWikiText(v.name).includes(foldWikiText(query))) : list;
   $("#valvePickerContent").innerHTML = matches.length
     ? `<div class="wiki-topic-list">${matches.map(v => `
@@ -1049,12 +1533,17 @@ function renderValvePickerList() {
     btn.addEventListener("click", () => selectProstheticValve(btn.dataset.valve));
   });
 }
-function openValvePicker() {
+/** @param {string} pos */
+function openValvePicker(pos) {
+  activeValvePos = pos;
   valveSearchQuery = "";
-  $("#valveSearchInput").value = "";
+  /** @type {HTMLInputElement} */ ($("#valveSearchInput")).value = "";
+  // Cleared first so the other position's list never flashes while this
+  // position's data loads.
+  $("#valvePickerContent").innerHTML = "";
   $("#valveOverlay").hidden = false;
   setupOverlay($("#valveSearchInput"));
-  loadProstheticAorticValves().then(renderValvePickerList).catch(err => {
+  loadProstheticValveData(pos).then(renderValvePickerList).catch(err => {
     console.error(err);
     $("#valvePickerContent").innerHTML = `<div class="wiki-empty">${uiStrings[state.language].wikiBodyLoadFailed}</div>`;
   });
@@ -1064,52 +1553,65 @@ function closeValvePicker() {
   teardownOverlay();
 }
 function selectProstheticValve(name) {
-  state.prostheticValveName = name;
-  state.prostheticValveSize = "";
+  const pos = activeValvePos;
+  state.valveSel[pos].name = name;
+  state.valveSel[pos].size = "";
   closeValvePicker();
-  updateValveTypeButton();
-  updateValveSizeOptions();
-  renderValveReference();
-  // Picking a valve clears the size, and with it any EOA grade from the
-  // previous selection (gradeEoaAgainstReference) — re-render so a stale
-  // badge doesn't linger until the next unrelated input event.
+  refreshValveControls(pos);
+  // Picking a valve clears the size, and with it any grade based on the
+  // previous selection — re-render so a stale badge doesn't linger until
+  // the next unrelated input event.
   computeResults();
 }
-function updateValveTypeButton() {
+/** @param {string} pos */
+function updateValveTypeButton(pos) {
   const t = uiStrings[state.language];
-  const btn = $("#valveTypeBtn");
-  btn.innerHTML = state.prostheticValveName
-    ? `<span>${state.prostheticValveName}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>`
+  const name = state.valveSel[pos].name;
+  $(valvePositions[pos].typeBtn).innerHTML = name
+    ? `<span>${name}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>`
     : `<span class="placeholder">${t.selectValve}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
 }
-function updateValveSizeOptions() {
-  const row = $("#valveSizeRow"), select = $("#valveSizeSelect");
-  const valve = currentCategoryValves().find(v => v.name === state.prostheticValveName);
+/** @param {string} pos */
+function updateValveSizeOptions(pos) {
+  const cfg = valvePositions[pos], sel = state.valveSel[pos];
+  const row = $(cfg.sizeRow), select = $(cfg.sizeSelect);
+  const valve = currentCategoryValves(pos).find(v => v.name === sel.name);
   if (!valve) { row.hidden = true; select.innerHTML = ""; return; }
   const t = uiStrings[state.language];
-  select.innerHTML = `<option value="" disabled ${state.prostheticValveSize ? "" : "selected"}>${t.selectSize}</option>`
-    + valve.sizes.map(s => `<option value="${s.size}" ${s.size === state.prostheticValveSize ? "selected" : ""}>${s.size} mm</option>`).join("");
+  select.innerHTML = `<option value="" disabled ${sel.size ? "" : "selected"}>${t.selectSize}</option>`
+    + valve.sizes.map(s => `<option value="${s.size}" ${s.size === sel.size ? "selected" : ""}>${s.size} mm</option>`).join("");
   row.hidden = false;
 }
-function renderValveReference() {
-  const el = $("#valveReference");
-  const valve = currentCategoryValves().find(v => v.name === state.prostheticValveName);
-  const sizeEntry = valve && valve.sizes.find(s => s.size === state.prostheticValveSize);
+/** @param {string} pos */
+function renderValveReference(pos) {
+  const el = $(valvePositions[pos].reference);
+  const valve = selectedValve(pos);
+  const sizeEntry = selectedValveSize(pos);
   if (!sizeEntry) { el.hidden = true; el.innerHTML = ""; return; }
   const t = uiStrings[state.language];
   const rows = [];
   if (sizeEntry.peak) rows.push(`<li><strong>${t.valvePeakGradient}:</strong> ${sizeEntry.peak} mmHg</li>`);
   if (sizeEntry.mean) rows.push(`<li><strong>${t.valveMeanGradient}:</strong> ${sizeEntry.mean} mmHg</li>`);
+  if (sizeEntry.vel) rows.push(`<li><strong>${t.valvePeakVelocity}:</strong> ${sizeEntry.vel} m/s</li>`);
+  if (sizeEntry.pht) rows.push(`<li><strong>${t.valvePht}:</strong> ${sizeEntry.pht} ms</li>`);
   if (sizeEntry.eoa) rows.push(`<li><strong>${t.valveEoa}:</strong> ${sizeEntry.eoa} cm²</li>`);
   if (sizeEntry.dvi) rows.push(`<li><strong>${t.valveDvi}:</strong> ${sizeEntry.dvi}</li>`);
   const note = valve.thirdParty ? `<p class="valve-third-party-note">${t.valveThirdPartyNote}</p>` : "";
   el.innerHTML = rows.length ? `<h3>${t.valveNormalValues}</h3><ul>${rows.join("")}</ul>${note}` : "";
   el.hidden = rows.length === 0;
 }
+/** @param {string} pos */
+function refreshValveControls(pos) {
+  updateValveTypeButton(pos);
+  updateValveSizeOptions(pos);
+  renderValveReference(pos);
+}
 // Parses a "mean ± SD" display string (the format every numeric field in
-// prosthetic-data/aortic-valves.js is stored in) into actual numbers.
-// Needed for gradeEoaAgainstReference below — everywhere else these
-// strings are shown as-is (see renderValveReference above), never parsed.
+// prosthetic-data/*.js is stored in) into actual numbers. Needed for the
+// reference-based EOA grading below — everywhere else these strings are
+// shown as-is (see renderValveReference above), never parsed. A value
+// printed without an SD in the source (e.g. "2.3") doesn't match, so it
+// can't be graded against.
 /**
  * @param {string} str
  * @returns {{ mean: number, sd: number } | null}
@@ -1134,8 +1636,7 @@ function parseMeanSd(str) {
  * @returns {string | null}
  */
 function gradeEoaAgainstReference(eoa) {
-  const valve = (window.prostheticAorticValves || []).find(v => v.name === state.prostheticValveName);
-  const sizeEntry = valve && valve.sizes.find(s => s.size === state.prostheticValveSize);
+  const sizeEntry = selectedValveSize("av");
   const ref = sizeEntry && parseMeanSd(sizeEntry.eoa);
   if (!ref) return null;
   const belowMean = ref.mean - eoa;
@@ -1143,10 +1644,30 @@ function gradeEoaAgainstReference(eoa) {
   if (belowMean <= 2 * ref.sd) return "possibleStenosis";
   return "stenosis";
 }
+// Prosthetic MV EOA against the selected valve's own reference EOA (Table
+// A5), shown as its own row next to the Table 11 absolute grade (per user
+// direction: both). The guideline only gives SD bands for aortic EOA
+// (Table 5); for mitral, Table 7's footnote only says a normal valve's EOA
+// is "within 1 SD of the reference EOA". The 1 SD / 2 SD bands are applied
+// here by analogy with the aortic table — an extrapolation, stated as such
+// in the mvProsthetic info notes. Expressed as a z-score (SDs from the
+// reference mean) so the row has a value to show. Null when there's no
+// selection, no EOA in the table for it, or no usable SD.
+/**
+ * @param {number} eoa
+ * @returns {{ z: number, grade: string } | null}
+ */
+function gradeMvEoaVsReference(eoa) {
+  const sizeEntry = selectedValveSize("mv");
+  const ref = sizeEntry && parseMeanSd(sizeEntry.eoa);
+  if (!ref || ref.sd <= 0) return null;
+  const z = (eoa - ref.mean) / ref.sd;
+  const grade = z >= -1 ? "normal" : z >= -2 ? "possibleStenosis" : "stenosis";
+  return { z, grade };
+}
 function refreshValvePickerLanguage() {
-  updateValveTypeButton();
-  updateValveSizeOptions();
-  renderValveReference();
+  refreshValveControls("av");
+  refreshValveControls("mv");
   if (!$("#valveOverlay").hidden) renderValvePickerList();
 }
 
@@ -1390,22 +1911,23 @@ const state = { language: "hu", bsaManualMode: false };
 let lastResults = {};
 const fieldNames = [
   "weight","height","bsaManual","heartRate",
-  "mrPisaRadius","mrAliasingVelocity","mrVmax","mrVti","mvVtiPw","mvVtiCw","mvPht",
+  "mrPisaRadius","mrAliasingVelocity","mrVmax","mrVti","mvVtiPw","mvVtiCw","mvPht","mvPeakE","mvMeanGradient",
   "arPisaRadius","arAliasingVelocity","arVmax","arVti",
   "trPisaRadius","trAliasingVelocity","trVmax","trVti",
   "lvotDiam","lvotVti","lvotVmax","aorticVmax","meanGradient","aorticVti","avAt","avEt"
 ];
 fieldNames.forEach(f => state[f] = "");
-// Prosthetic aortic valve mode — separate from fieldNames since it's a
-// boolean toggle, not a text input field.
+// Prosthetic aortic/mitral valve modes — separate from fieldNames since
+// they're boolean toggles, not text input fields.
 state.prostheticAV = false;
-// Valve type/size picker (reference lookup only — see renderValveReference;
-// this never feeds into a calculation). prostheticValveCategory choosing
-// "biological" also shows the transcatheter valves (see
-// prosthetic-data/aortic-valves.js) alongside surgical bioprostheses.
-state.prostheticValveCategory = "mechanical";
-state.prostheticValveName = "";
-state.prostheticValveSize = "";
+state.prostheticMV = false;
+// Valve type/size picker selection, per position (see valvePositions).
+// Choosing "biological" also shows the transcatheter valves (see
+// prosthetic-data/*.js) alongside surgical bioprostheses.
+state.valveSel = {
+  av: { category: "mechanical", name: "", size: "" },
+  mv: { category: "mechanical", name: "", size: "" },
+};
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -1429,6 +1951,8 @@ const fieldDefs = {
   mvVtiPw: { label: "vti", unit: "cm" },
   mvVtiCw: { label: "mvVtiCw", unit: "cm" },
   mvPht: { label: "mvPht", unit: "ms" },
+  mvPeakE: { label: "mvPeakE", unit: "m/s" },
+  mvMeanGradient: { label: "mvMeanGradient", unit: "mmHg" },
   lvotDiam: { label: "lvotDiam", unit: "mm" },
   lvotVti: { label: "lvotVti", unit: "cm" },
   lvotVmax: { label: "lvotVmax", unit: "m/s" },
@@ -1560,42 +2084,48 @@ $("#bsaModeToggle").addEventListener("click", () => {
   computeResults();
 });
 
-$("#prostheticAvToggle").addEventListener("change", (e) => {
-  state.prostheticAV = /** @type {HTMLInputElement} */ (e.target).checked;
-  $("#avProstheticFields").hidden = !state.prostheticAV;
-  $("#avProstheticValveBlock").hidden = !state.prostheticAV;
-  if (state.prostheticAV) { updateValveTypeButton(); updateValveSizeOptions(); renderValveReference(); }
-  computeResults();
+// Prosthetic valve toggles (AV, MV) and their type/size pickers — one
+// wiring loop over valvePositions, since both positions have the same
+// controls under different ids (see index.html).
+[["av", "#prostheticAvToggle", "prostheticAV", "#avProstheticFields", "#avProstheticValveBlock"],
+ ["mv", "#prostheticMvToggle", "prostheticMV", "#mvProstheticFields", "#mvProstheticValveBlock"]]
+  .forEach(([pos, toggleSel, stateKey, fieldsSel, blockSel]) => {
+    $(toggleSel).addEventListener("change", (e) => {
+      state[stateKey] = /** @type {HTMLInputElement} */ (e.target).checked;
+      $(fieldsSel).hidden = !state[stateKey];
+      $(blockSel).hidden = !state[stateKey];
+      if (state[stateKey]) refreshValveControls(pos);
+      computeResults();
+    });
+  });
+Object.entries(valvePositions).forEach(([pos, cfg]) => {
+  $(cfg.categoryToggle).addEventListener("change", (e) => {
+    state.valveSel[pos].category = /** @type {HTMLInputElement} */ (e.target).checked ? "biological" : "mechanical";
+    // A previously selected valve almost certainly doesn't belong to the
+    // newly chosen category (names aren't shared across mechanical/
+    // biological), so clear it rather than show a stale, now-invalid pick.
+    state.valveSel[pos].name = "";
+    state.valveSel[pos].size = "";
+    refreshValveControls(pos);
+    // Clearing the selection can also clear an EOA grade that was based on
+    // it — re-render so the badge disappears too.
+    computeResults();
+  });
+  $(cfg.typeBtn).addEventListener("click", () => openValvePicker(pos));
+  $(cfg.sizeSelect).addEventListener("change", (e) => {
+    state.valveSel[pos].size = /** @type {HTMLSelectElement} */ (e.target).value;
+    renderValveReference(pos);
+    // The EOA grades (gradeEoaAgainstReference / gradeMvEoaVsReference)
+    // depend on the selected valve+size, unlike the rest of this picker,
+    // which is display-only — so a size pick needs to re-run
+    // computeResults(), not just the reference-card render above.
+    computeResults();
+  });
 });
-
-$("#valveCategoryToggle").addEventListener("change", (e) => {
-  state.prostheticValveCategory = /** @type {HTMLInputElement} */ (e.target).checked ? "biological" : "mechanical";
-  // A previously selected valve almost certainly doesn't belong to the
-  // newly chosen category (names aren't shared across mechanical/
-  // biological), so clear it rather than show a stale, now-invalid pick.
-  state.prostheticValveName = "";
-  state.prostheticValveSize = "";
-  updateValveTypeButton();
-  updateValveSizeOptions();
-  renderValveReference();
-  // Clearing the selection can also clear an EOA grade that was based on
-  // it (gradeEoaAgainstReference) — re-render so the badge disappears too.
-  computeResults();
-});
-$("#valveTypeBtn").addEventListener("click", openValvePicker);
 $("#valveOverlayClose").addEventListener("click", closeValvePicker);
 $("#valveSearchInput").addEventListener("input", (e) => {
   valveSearchQuery = /** @type {HTMLInputElement} */ (e.target).value;
   renderValvePickerList();
-});
-$("#valveSizeSelect").addEventListener("change", (e) => {
-  state.prostheticValveSize = /** @type {HTMLSelectElement} */ (e.target).value;
-  renderValveReference();
-  // The EOA badge (gradeEoaAgainstReference) depends on the selected
-  // valve+size, unlike the rest of this picker, which is display-only —
-  // so a size pick needs to re-run computeResults(), not just the
-  // reference-card render above.
-  computeResults();
 });
 
 $("#langToggle").addEventListener("click", () => {
@@ -1673,13 +2203,21 @@ function fmt(value) {
 // instead. "discordant" is deliberately its own neutral color, not red —
 // it's a data-quality flag ("recheck your inputs"), not a severity level,
 // so it shouldn't read as alarming as an actual stenosis finding.
-const avVerdictColor = { normal: "normal", possibleStenosis: "caution", stenosis: "danger", discordant: "neutral" };
-function renderAvVerdict(verdict, lang) {
+// The mitral verdict (calculateMvVerdict) reuses the same callout: "mr"
+// (suggests significant prosthetic MR) reads as red like stenosis, and
+// "highFlow" (raised flow parameters with a normal PHT — MR, high flow or
+// PPM, not yet decided) as amber like possible stenosis.
+const avVerdictColor = { normal: "normal", possibleStenosis: "caution", stenosis: "danger", discordant: "neutral",
+  mr: "danger", highFlow: "caution" };
+// Verdict strings are translation keys built from a prefix ("av"/"mv")
+// plus the capitalized category/note, e.g. "mv" + "highFlow" -> mvHighFlow.
+const verdictKey = (prefix, key) => prefix + key[0].toUpperCase() + key.slice(1);
+function renderAvVerdict(verdict, lang, prefix = "av") {
   const t = translations[lang];
   const el = document.createElement("div");
   el.className = `av-verdict av-verdict-${avVerdictColor[verdict.category]}`;
-  const noteHtml = verdict.note ? `<p>${t["av" + verdict.note[0].toUpperCase() + verdict.note.slice(1)]}</p>` : "";
-  el.innerHTML = `<h3>${t.avVerdictTitle}</h3><p class="av-verdict-headline">${t["av" + verdict.category[0].toUpperCase() + verdict.category.slice(1)]}</p>${noteHtml}`;
+  const noteHtml = verdict.note ? `<p>${t[verdictKey(prefix, verdict.note)]}</p>` : "";
+  el.innerHTML = `<h3>${t[prefix + "VerdictTitle"]}</h3><p class="av-verdict-headline">${t[verdictKey(prefix, verdict.category)]}</p>${noteHtml}`;
   return el;
 }
 
@@ -1722,18 +2260,37 @@ function computeResults() {
   const eoaGrade = s.prostheticAV && ava !== null ? gradeEoaAgainstReference(ava) : null;
   const bmi = s.prostheticAV ? calculateBMI(s.weight, s.height, lang) : null;
   const eoaiGrade = s.prostheticAV && avai !== null && bmi !== null ? gradeEoaiPPM(avai, bmi) : null;
+  // Prosthetic MV (Table 11 / Table 7 / Table 12 — see gradeFns.mvPeakE
+  // and calculateMvVerdict). EOA is the same continuity value as the
+  // native MVA(VTI) below, relabeled; peak E / mean gradient / PHT are
+  // inputs that only become graded result rows in prosthetic mode.
+  /** @param {string} raw */
+  const positiveOrNull = (raw) => {
+    const n = parseNumber(raw, lang);
+    return raw && !isNaN(n) && n > 0 ? n : null;
+  };
+  const pmv = s.prostheticMV;
+  const mvPeakENum = pmv ? positiveOrNull(s.mvPeakE) : null;
+  const mvMeanNum = pmv ? positiveOrNull(s.mvMeanGradient) : null;
+  const mvPhtNum = pmv ? positiveOrNull(s.mvPht) : null;
+  const mvDvi = pmv ? calculateMvDvi(s.mvVtiCw, s.lvotVti, lang) : null;
+  const mvVerdict = pmv ? calculateMvVerdict(s.mvPeakE, s.mvMeanGradient, mvDvi, s.mvPht, lang) : null;
   let mvVtiLvotVti = null;
   if (s.mvVtiPw && s.lvotVti) {
     const r = parseFloat(s.mvVtiPw) / parseFloat(s.lvotVti);
     if (!isNaN(r)) mvVtiLvotVti = r.toFixed(2);
   }
   const mvaVti = calculateAVA(s.lvotDiam, s.lvotVti, s.mvVtiCw, lang);
-  const mvaPht = calculateMVAPht(s.mvPht, lang);
+  const mvaPht = pmv ? null : calculateMVAPht(s.mvPht, lang);
+  const mvEoai = pmv ? calculateAVAI(mvaVti, bsa) : null;
+  const mvBmi = pmv ? calculateBMI(s.weight, s.height, lang) : null;
+  const mvEoaiGrade = mvEoai !== null && mvBmi !== null ? gradeMvEoaiPPM(mvEoai, mvBmi) : null;
+  const mvEoaRef = pmv && mvaVti !== null ? gradeMvEoaVsReference(mvaVti) : null;
 
   const t = translations[lang];
   const rows = [
     ["bsaResult", bsa, "m²"],
-    ["mrEro", mrEro, "cm²"],
+    ["mrEro", mrEro, "cm²", s.prostheticMV ? "mrEroProsthetic" : undefined],
     ["mrRegVol", mrRegVol, "ml"],
     ["mrRegFraction", mrRegFraction, "%"],
     ["arEro", arEro, "cm²"],
@@ -1758,7 +2315,16 @@ function computeResults() {
     ["avAt", avAtNum, "ms"],
     ["avAtEt", avAtEt, ""],
     ["mvVtiLvotVti", mvVtiLvotVti === null ? null : parseFloat(mvVtiLvotVti.replace(",", ".")), ""],
-    ["mvaVti", mvaVti, "cm²"],
+    // Prosthetic MV rows (all null, so skipped, when the toggle is off).
+    ["mvPeakE", mvPeakENum, "m/s"],
+    ["mvMeanGradient", mvMeanNum, "mmHg"],
+    ["mvPht", mvPhtNum, "ms"],
+    ["mvDvi", mvDvi, ""],
+    [pmv ? "mvEoa" : "mvaVti", mvaVti, "cm²"],
+    ["mvEoai", mvEoai, "cm²/m²", undefined, mvEoaiGrade],
+    // Value is a z-score (SDs from the selected valve's reference EOA) —
+    // see gradeMvEoaVsReference.
+    ["mvEoaRef", mvEoaRef ? mvEoaRef.z : null, "SD", undefined, mvEoaRef ? mvEoaRef.grade : undefined],
     ["mvaPht", mvaPht, "cm²"],
     ["sv", sv, "ml"],
     ["svi", svi, "ml/m²"],
@@ -1786,11 +2352,12 @@ function computeResults() {
   // value+unit), so it's appended directly rather than going through the
   // rows/gradeFn machinery — see renderAvVerdict().
   if (avVerdict) { any = true; list.appendChild(renderAvVerdict(avVerdict, lang)); }
+  if (mvVerdict) { any = true; list.appendChild(renderAvVerdict(mvVerdict, lang, "mv")); }
   $("#resultsCard").hidden = !any;
 
   lastResults = { bsa, mrEro, mrRegVol, mrRegFraction, arEro, arRegVol, arRegFraction,
     trEro, trRegVol, sv, svi, cardiacOutput, cardiacIndex, ava, avai, dviVti, dviVmax, avAtEt, avVerdict,
-    mvVtiLvotVti, mvaVti, mvaPht };
+    mvVtiLvotVti, mvaVti, mvaPht, mvPeakENum, mvMeanNum, mvPhtNum, mvDvi, mvEoai, mvEoaRef, mvVerdict };
 }
 
 // ---- report text for "Copy to Report" ----
@@ -1851,8 +2418,33 @@ function buildReportText() {
 
   // Mitral Stenosis — just the computed MVA(s), one per line, no group heading
   const msLines = [];
-  if (lastResults.mvaPht !== null) msLines.push(`${t.mvaPht}: ${fmt(lastResults.mvaPht)} cm²`);
-  if (lastResults.mvaVti !== null) msLines.push(`${t.mvaVti}: ${fmt(lastResults.mvaVti)} cm²`);
+  if (s.prostheticMV) {
+    // Prosthetic MV: the selected valve (if any) as a heading, heart rate
+    // (the guideline asks for gradients to be reported with the HR they
+    // were measured at), then the Table 11 parameters and the verdict.
+    // PHT/peak E/mean gradient are echoed as typed, like AT for the AV.
+    const sel = s.valveSel.mv;
+    const valveText = sel.name ? `: ${sel.name}${sel.size ? ` ${sel.size} mm` : ""}` : "";
+    const hr = rawInput(s.heartRate, lang);
+    if (hr !== null) msLines.push(`${t.heartRateAbbr}: ${hr} bpm`);
+    const peakE = rawInput(s.mvPeakE, lang);
+    if (peakE !== null) msLines.push(`${t.mvPeakE}: ${peakE} m/s`);
+    const meanG = rawInput(s.mvMeanGradient, lang);
+    if (meanG !== null) msLines.push(`${t.mvMeanGradient}: ${meanG} mmHg`);
+    const pht = rawInput(s.mvPht, lang);
+    if (pht !== null) msLines.push(`${t.mvPht}: ${pht} ms`);
+    if (lastResults.mvDvi !== null) msLines.push(`MV DVI: ${fmt(lastResults.mvDvi)}`);
+    if (lastResults.mvaVti !== null) msLines.push(`${t.mvEoa}: ${fmt(lastResults.mvaVti)} cm²`);
+    if (lastResults.mvEoai !== null) msLines.push(`${t.mvEoai}: ${fmt(lastResults.mvEoai)} cm²/m²`);
+    if (lastResults.mvVerdict) {
+      const v = lastResults.mvVerdict;
+      msLines.push(`${t.mvVerdictTitle}: ${t[verdictKey("mv", v.category)]}`);
+    }
+    if (msLines.length || valveText) msLines.unshift(`${t.prostheticMvReport}${valveText}`);
+  } else {
+    if (lastResults.mvaPht !== null) msLines.push(`${t.mvaPht}: ${fmt(lastResults.mvaPht)} cm²`);
+    if (lastResults.mvaVti !== null) msLines.push(`${t.mvaVti}: ${fmt(lastResults.mvaVti)} cm²`);
+  }
   blocks.push(msLines.length ? msLines.join("\n") : null);
 
   // LVOT / AV / AVA / DVI block — one line per item, no blank lines between them
